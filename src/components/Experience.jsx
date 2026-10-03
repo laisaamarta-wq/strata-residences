@@ -11,13 +11,12 @@ const VIEWS = [
   { id: 'details', label: 'Details' },
 ]
 
-export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directorRef }) {
+export default function Experience({ lenis, directorRef, onGoTo }) {
   const stageRef = useRef(null)
   const worldRef = useRef(null)
   const tiltRef = useRef(null)
   const masterRef = useRef(null)
   const plateRef = useRef(null)
-  const glowRef = useRef(null)
   const flashRef = useRef(null)
   const lightRef = useRef(null)
   const sliceRefs = useRef([])
@@ -30,12 +29,9 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
   const [hover, setHover] = useState(-1)
   const [preview, setPreview] = useState(-1)
   const [view, setView] = useState('space')
-  const [night, setNight] = useState(false)
   const [passing, setPassing] = useState(null)
   const [vp, setVp] = useState({ w: 1440, h: 900 })
   const shown = hover >= 0 ? hover : preview
-  const tourDoneRef = useRef(tourDone)
-  tourDoneRef.current = tourDone
 
   const onState = useCallback((s) => {
     if (s.phase) {
@@ -52,7 +48,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
   // ---- boot the director ----
   useLayoutEffect(() => {
     const d = new Director({
-      world: worldRef.current, master: masterRef.current, plate: plateRef.current, glow: glowRef.current,
+      world: worldRef.current, master: masterRef.current, plate: plateRef.current,
       flash: flashRef.current, slices: sliceRefs.current, facades: facadeRefs.current, interiors: interiorRefs.current,
     }, onState)
     dir.current = d
@@ -70,55 +66,46 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
     return () => window.removeEventListener('resize', onR)
   }, [onState, directorRef])
 
-  // ---- lock page scroll while the tour owns the wheel ----
-  const tourOwnsScroll = st.mode !== 'overview' || !tourDone
+  // ---- page scroll ----
+  // The page always scrolls normally. Scrolling never selects or enters a floor:
+  // only an explicit click does. While a floor is open (full-screen interior),
+  // the page is held still, and any scroll gesture simply steps back out to the
+  // building, so the visitor is never trapped inside a residence.
+  const inside = st.mode !== 'overview'
   useEffect(() => {
     if (!lenis) return
-    if (tourOwnsScroll && window.scrollY < 8) lenis.stop()
+    if (inside) lenis.stop()
     else lenis.start()
-  }, [tourOwnsScroll, lenis])
+  }, [inside, lenis])
 
-  // ---- wheel / touch / keys = camera navigation ----
   useEffect(() => {
-    let acc = 0, accT = 0, coolUntil = 0, touchY = null
-    const d = () => dir.current
-    const owns = () => window.scrollY < 8 && (d().mode !== 'overview' || !tourDoneRef.current)
-    const step = (down) => {
-      const D = d()
-      if (D.mode === 'moving' || performance.now() < coolUntil) return
-      coolUntil = performance.now() + 900
-      if (down) {
-        const moved = D.next()
-        if (!moved && D.mode === 'floor') {
-          // past the penthouse: pull back out to the whole building, then continue down the page
-          D.back()
-          const wait = () => (D.mode === 'overview' ? onTourEnd() : setTimeout(wait, 120))
-          setTimeout(wait, 400)
-        }
-      } else D.prev()
-    }
+    let acc = 0, accT = 0, touchY = null
+    const D = () => dir.current
+    // panels with their own scroll (details sheet, plan) keep their gestures
+    const ownScroll = (t) => t instanceof Element && t.closest('.details-in, .plan-layer')
+    const exit = () => { if (D().mode === 'floor') D().back() }
     const onWheel = (e) => {
-      if (!owns()) return
+      if (D().mode === 'overview') return // normal page scroll
+      if (ownScroll(e.target)) return
       e.preventDefault()
       const now = performance.now()
       if (now - accT > 220) acc = 0
       accT = now
       acc += e.deltaY
-      if (Math.abs(acc) > 28) { step(acc > 0); acc = 0 }
+      if (Math.abs(acc) > 40) { acc = 0; exit() }
     }
-    const onTS = (e) => { touchY = e.touches[0].clientY }
-    const onTM = (e) => { if (owns() && e.cancelable) e.preventDefault() }
+    const onTS = (e) => { touchY = ownScroll(e.target) ? null : e.touches[0].clientY }
+    const onTM = (e) => { if (D().mode !== 'overview' && touchY !== null && e.cancelable) e.preventDefault() }
     const onTE = (e) => {
-      if (touchY === null || !owns()) return
+      if (touchY === null || D().mode === 'overview') { touchY = null; return }
       const dy = touchY - e.changedTouches[0].clientY
       touchY = null
-      if (Math.abs(dy) > 42) step(dy > 0)
+      if (Math.abs(dy) > 50) exit()
     }
     const onKey = (e) => {
-      if (e.key === 'Escape') { d().back(); return }
-      if (!owns()) return
-      if (['ArrowDown', 'PageDown', ' '].includes(e.key)) { e.preventDefault(); step(true) }
-      if (['ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); step(false) }
+      if (D().mode === 'overview') return
+      if (e.key === 'Escape') { exit(); return }
+      if (['ArrowDown', 'PageDown', ' ', 'ArrowUp', 'PageUp'].includes(e.key) && !ownScroll(e.target)) { e.preventDefault(); exit() }
     }
     window.addEventListener('wheel', onWheel, { passive: false })
     window.addEventListener('touchstart', onTS, { passive: true })
@@ -132,7 +119,22 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
       window.removeEventListener('touchend', onTE)
       window.removeEventListener('keydown', onKey)
     }
-  }, [onTourEnd])
+  }, [])
+
+  // Entering a floor is always an explicit click. If the visitor has scrolled
+  // down, glide back to the building first, then start the camera move.
+  const enter = useCallback((i) => {
+    const D = dir.current
+    if (!D) return
+    if (window.scrollY > 2 && lenis) lenis.scrollTo(0, { duration: 1.1, onComplete: () => D.go(i) })
+    else D.go(i)
+  }, [lenis])
+
+  // pointer position in stage coordinates (the stage scrolls with the page)
+  const stagePoint = (e) => {
+    const r = stageRef.current.getBoundingClientRect()
+    return { x: e.clientX - r.left, y: e.clientY - r.top }
+  }
 
   // ---- hover: floors light up, the building leans toward the cursor ----
   useEffect(() => {
@@ -143,12 +145,13 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
     const ly = gsap.quickTo(lightRef.current, 'y', { duration: 0.8, ease: 'power3.out' })
     const onMove = (e) => {
       const D = dir.current
-      lx(e.clientX); ly(e.clientY)
+      const sp = stagePoint(e)
+      lx(sp.x); ly(sp.y)
       if (e.pointerType !== 'mouse') return
       const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
       if (D.mode === 'overview') { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
       if (D.mode !== 'overview') return
-      const p = toImage(D.L, e.clientX, e.clientY)
+      const p = toImage(D.L, sp.x, sp.y)
       const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
       setHover((h) => (h === i ? h : i))
       if (i >= 0) D.preloadFloor(i)
@@ -170,18 +173,13 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
     const D = dir.current
     if (D.mode !== 'overview') return
     if (e.target.closest('button, a, .ui-block')) return
-    const p = toImage(D.L, e.clientX, e.clientY)
+    const sp = stagePoint(e)
+    const p = toImage(D.L, sp.x, sp.y)
     const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
     if (i < 0) { setPreview(-1); return }
     const pt = e.nativeEvent.pointerType
-    if (pt === 'mouse' || !isMobile(window.innerWidth) || preview === i) D.go(i)
+    if (pt === 'mouse' || !isMobile(window.innerWidth) || preview === i) enter(i)
     else { setPreview(i); D.preloadFloor(i) }
-  }
-
-  const toggleNight = () => {
-    const n = !night
-    setNight(n)
-    dir.current.setNight(n)
   }
 
   const L = st.L
@@ -200,7 +198,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
 
   return (
     <section id="project" ref={stageRef}
-      className={`stage ui-${ui} mode-${st.mode} view-${view} ${night ? 'is-night' : ''} ${shown >= 0 ? 'has-hover' : ''}`}
+      className={`stage ui-${ui} mode-${st.mode} view-${view} ${shown >= 0 ? 'has-hover' : ''}`}
       onClick={onStageClick}>
       <div className="stage-sky" />
       <div className="tilt" ref={tiltRef}>
@@ -214,8 +212,6 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
               src={`/img/slice-${f.id}.webp`} loading="eager"
               style={{ left: f.slice.x, top: f.slice.y, width: f.slice.w, height: f.slice.h }} />
           ))}
-          <div className="night" />
-          <img ref={glowRef} className="glow" src={img('hero', 1400)} alt="" data-on="0" />
           <svg className="floors" viewBox={`0 0 ${MASTER.w} ${MASTER.h}`} aria-hidden="true">
             {FLOORS.map((f, i) => (
               <g key={f.id} className={`floor-hit ${shown === i ? 'is-on' : ''} ${st.active === i ? 'is-active' : ''}`}>
@@ -275,7 +271,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
             <span className="fl-teaser mono">{labelFloor.teaser}</span>
             <span className="fl-hour mono">{labelFloor.hour} · {labelFloor.light}</span>
             {preview >= 0 && (
-              <button className="fl-enter" onClick={(e) => { e.stopPropagation(); dir.current.go(preview) }}>Enter level →</button>
+              <button className="fl-enter" onClick={(e) => { e.stopPropagation(); enter(preview) }}>Enter level →</button>
             )}
           </div>
         </div>
@@ -283,13 +279,9 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
 
       <div className="scroll-cue mono">
         <span className="cue-line" />
-        <span>{tourDone ? 'Scroll to continue' : 'Scroll to explore'}</span>
-        <button className="skip" onClick={(e) => { e.stopPropagation(); onSkip() }}>Skip to the story ↓</button>
+        <span>Scroll to explore</span>
       </div>
 
-      <button className="light-toggle mono ui-block" onClick={(e) => { e.stopPropagation(); toggleNight() }} aria-pressed={night}>
-        <span className={!night ? 'on' : ''}>Dusk</span><i /><span className={night ? 'on' : ''}>Night</span>
-      </button>
 
       {/* ---------------- FLOOR SELECTOR (synced with camera) ---------------- */}
       <nav className="selector ui-block" aria-label="Floors">
@@ -301,7 +293,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
                 className={`${selFloor === i ? 'is-active' : ''} ${hover === i && st.mode === 'overview' ? 'is-hover' : ''}`}
                 onMouseEnter={() => { if (st.mode === 'overview') setHover(i); dir.current?.preloadFloor(i) }}
                 onMouseLeave={() => st.mode === 'overview' && setHover(-1)}
-                onClick={(e) => { e.stopPropagation(); dir.current.go(i) }}
+                onClick={(e) => { e.stopPropagation(); enter(i) }}
                 aria-current={st.active === i ? 'true' : undefined}>
                 <span className="sel-num mono">{f.label}</span>
                 <span className="sel-bar" />
@@ -351,7 +343,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
             ))}
           </div>
 
-          <div className="plan-layer ui-block" onClick={(e) => e.stopPropagation()}>
+          <div className="plan-layer ui-block" data-lenis-prevent onClick={(e) => e.stopPropagation()}>
             {view === 'plan' && (
               <div className="plan-wrap">
                 <p className="mono plan-cap"><span>Floor plan</span><span>{fl.name}</span><span>Typical residence · not to scale</span></p>
@@ -362,7 +354,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
           </div>
 
           <aside className="details ui-block" onClick={(e) => e.stopPropagation()} aria-hidden={view !== 'details'}>
-            <div className="details-in">
+            <div className="details-in" data-lenis-prevent>
               <p className="mono d-kicker">Level {fl.label} · {fl.kind}</p>
               <h3 className="serif">{fl.name}</h3>
               <p className="d-intro">{fl.intro}</p>
@@ -377,7 +369,7 @@ export default function Experience({ tourDone, onTourEnd, onSkip, lenis, directo
               <ul className="d-features">{fl.features.map((x) => <li key={x}>{x}</li>)}</ul>
               <div className="d-foot">
                 <span className="d-price serif">{fl.price}</span>
-                <a className="btn" href="#enquire" onClick={() => { dir.current.back() }}>Request a private viewing</a>
+                <a className="btn" href="#enquire" onClick={(e) => { e.preventDefault(); onGoTo('#enquire') }}>Request a private viewing</a>
               </div>
             </div>
           </aside>

@@ -103,21 +103,17 @@ em { font-style: italic; }
   overflow: hidden; background: var(--ink); color: var(--bone);
   perspective: 1800px;
   user-select: none; -webkit-user-select: none;
-  touch-action: pan-x;
+  touch-action: pan-y;
 }
-.stage-sky { position: absolute; inset: 0; background: linear-gradient(180deg, #46516b 0%, #6f7e9b 45%, #6f7e9b 100%); transition: filter 1.4s var(--ease); }
+.stage-sky { position: absolute; inset: 0; background: linear-gradient(180deg, #46516b 0%, #6f7e9b 45%, #6f7e9b 100%); }
 .tilt { position: absolute; inset: 0; transform-origin: 60% 55%; will-change: transform; }
 .world { position: absolute; left: 0; top: 0; will-change: transform; }
-.world > img.plate, .world > img.master, .world > img.glow, .world > .night {
+.world > img.plate, .world > img.master {
   position: absolute; left: 0; top: 0; width: 100%; height: 100%;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 5%);
   mask-image: linear-gradient(180deg, transparent 0%, #000 5%);
 }
 .world > .slice { position: absolute; will-change: transform, opacity; }
-.world > .night { background: linear-gradient(180deg, rgba(16, 20, 38, 0.72), rgba(10, 12, 24, 0.6)); mix-blend-mode: multiply; opacity: 0; transition: opacity 1.4s var(--ease); pointer-events: none; }
-.world > .glow { mix-blend-mode: screen; filter: brightness(1.5) contrast(2.6) saturate(1.25); clip-path: inset(12.9% 34.1% 15.4% 32.9%); opacity: 0; }
-.is-night .world > .night { opacity: 1; }
-.is-night .stage-sky { filter: brightness(0.45) saturate(1.2); }
 
 .floors { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; transition: opacity 0.5s; }
 .world > .master { transition: filter 0.8s var(--ease-out); }
@@ -165,7 +161,6 @@ em { font-style: italic; }
 .mist i:nth-child(3) { bottom: -4%; animation-duration: 64s; animation-delay: -41s; opacity: .8; }
 @keyframes mist { from { transform: translateX(-75vw); } to { transform: translateX(110vw); } }
 .stage:not(.mode-overview) .mist { opacity: 0; }
-.is-night .mist { opacity: .3; }
 
 /* ---------- hero UI ---------- */
 .hero-ui { position: absolute; left: var(--gutter); top: 50%; transform: translateY(-48%); max-width: min(46vw, 760px); z-index: 2; pointer-events: none; }
@@ -185,11 +180,11 @@ em { font-style: italic; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes lineUp { from { transform: translateY(105%); } to { transform: none; } }
 
-.hero-ui, .scroll-cue, .light-toggle { transition: opacity 0.9s var(--ease), transform 1.1s var(--ease), filter 0.9s var(--ease); }
+.hero-ui, .scroll-cue { transition: opacity 0.9s var(--ease), transform 1.1s var(--ease), filter 0.9s var(--ease); }
 .stage:not(.ui-overview) .hero-ui { opacity: 0; transform: translateY(calc(-48% - 40px)); filter: blur(8px); }
 .stage.ui-overview .hero-ui { transition-delay: .35s; }
 .has-hover .hero-ui { opacity: .22; filter: blur(1.5px); transition-delay: 0s; }
-.stage:not(.ui-overview) .scroll-cue, .stage:not(.ui-overview) .light-toggle { opacity: 0; pointer-events: none; transform: translateY(16px); }
+.stage:not(.ui-overview) .scroll-cue { opacity: 0; pointer-events: none; transform: translate(-50%, 16px); }
 
 /* ---------- hover label ---------- */
 .floor-label { position: absolute; z-index: 4; pointer-events: none; display: flex; align-items: center; transform: translateY(-50%); }
@@ -212,14 +207,6 @@ em { font-style: italic; }
 .cue-line { width: 1px; height: 46px; background: rgba(238, 233, 224, .25); position: relative; overflow: hidden; }
 .cue-line::after { content: ''; position: absolute; left: 0; top: 0; width: 1px; height: 46px; background: var(--bone); animation: cue 2.2s var(--ease) infinite; }
 @keyframes cue { 0% { transform: translateY(-100%); } 60%, 100% { transform: translateY(100%); } }
-.skip { font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; text-transform: uppercase; opacity: .55; transition: opacity .3s; }
-.skip:hover { opacity: 1; }
-.light-toggle { position: absolute; left: var(--gutter); bottom: 30px; z-index: 3; display: flex; align-items: center; gap: 10px; }
-.light-toggle span { opacity: .45; transition: opacity .4s; }
-.light-toggle span.on { opacity: 1; }
-.light-toggle i { width: 28px; height: 14px; border: 1px solid rgba(238, 233, 224, .5); border-radius: 10px; position: relative; }
-.light-toggle i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 8px; height: 8px; border-radius: 50%; background: var(--bone); transition: transform .5s var(--ease); }
-.is-night .light-toggle i::after { transform: translateX(14px); }
 
 /* ---------- floor selector ---------- */
 .selector { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); z-index: 6; display: flex; flex-direction: column; align-items: flex-end; gap: 14px; transition: opacity .6s; }
@@ -522,7 +509,6 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
   .scroll-cue > span:not(.cue-line) { font-size: 9px; }
   .scroll-cue .cue-line { height: 28px; }
   .scroll-cue .cue-line::after { height: 28px; }
-  .light-toggle { bottom: auto; top: calc(var(--hdr) + 22px); left: auto; right: var(--gutter); font-size: 9px; }
 
 
   .selector { top: auto; bottom: 16px; left: var(--gutter); right: var(--gutter); transform: none; align-items: stretch; gap: 0; }

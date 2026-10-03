@@ -1,5 +1,5 @@
 import gsap from 'gsap'
-import { FLOORS, img } from '../data.js'
+import { FLOORS } from '../data.js'
 import { baseLayout, floorCam, zoomAbout, facadeMatchScale, isMobile } from './camera.js'
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -81,19 +81,6 @@ export class Director {
     if (this.mode === 'overview') return this.enter(i)
     return this.elevator(this.active, i)
   }
-  next() {
-    if (this.mode === 'moving') return false
-    if (this.mode === 'overview') { this.go(0); return true }
-    if (this.active < FLOORS.length - 1) { this.go(this.active + 1); return true }
-    return false
-  }
-  prev() {
-    if (this.mode === 'moving') return false
-    if (this.mode === 'floor' && this.active > 0) { this.go(this.active - 1); return true }
-    if (this.mode === 'floor' && this.active === 0) { this.back(); return true }
-    return false
-  }
-
   finish() {
     this.mode = this.active >= 0 ? 'floor' : 'overview'
     this.emit()
@@ -106,7 +93,7 @@ export class Director {
 
   // ---------- building → floor ----------
   buildEnter(i) {
-    const { world, master, plate, glow, slices, facades, interiors, flash } = this.els
+    const { world, master, plate, slices, facades, interiors, flash } = this.els
     const vw = this.vw, vh = this.vh
     const fl = FLOORS[i]
     const L = this.L
@@ -120,7 +107,6 @@ export class Director {
     // Phase 0 — swap the flat image for the stacked floor slices
     tl.fromTo(slices, { opacity: 0 }, { opacity: 1, duration: 0.01 }, 0)
     tl.fromTo(master, { opacity: 1 }, { opacity: 0, duration: 0.45, ease: 'power1.inOut' }, 0.02)
-    tl.fromTo(glow, { opacity: () => glow.dataset.on === '1' ? 0.55 : 0 }, { opacity: 0, duration: 0.3 }, 0)
     tl.fromTo(plate, { opacity: 0, filter: 'brightness(1)' },
       { opacity: 1, filter: 'brightness(0.42)', duration: 1.2, ease: 'power2.inOut' }, 0)
 
@@ -188,7 +174,6 @@ export class Director {
       gsap.set(this.els.master, { opacity: 1 })
       gsap.set(this.els.world, { opacity: 1, ...this.camProps(this.L) })
       gsap.set(this.els.plate, { opacity: 0 })
-      gsap.set(this.els.glow, { opacity: this.els.glow.dataset.on === '1' ? 0.55 : 0 })
       this.finish()
     })
     tl.call(() => this.onState({ phase: 'overview-ui' }), null, 0.5)
@@ -279,12 +264,5 @@ export class Director {
     this.zone = z
     this.emit()
   }
-
-  setNight(on) {
-    const g = this.els.glow
-    g.dataset.on = on ? '1' : '0'
-    if (this.mode === 'overview') gsap.to(g, { opacity: on ? 0.55 : 0, duration: 1.4, ease: 'power2.inOut' })
-  }
 }
 
-export const facadeSrc = (fl) => img(fl.facade)

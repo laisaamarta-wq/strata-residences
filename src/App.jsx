@@ -13,7 +13,6 @@ gsap.registerPlugin(ScrollTrigger)
 
 export default function App() {
   const [lenis, setLenis] = useState(null)
-  const [tourDone, setTourDone] = useState(false)
   const [theme, setTheme] = useState('dark')
   const [menu, setMenu] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -39,7 +38,6 @@ export default function App() {
   }, [])
 
   const scrollTo = useCallback((target) => {
-    setTourDone(true)
     setMenu(false)
     const d = directorRef.current
     const run = () => { lenis?.start(); lenis?.scrollTo(target, { duration: 1.8 }) }
@@ -49,8 +47,6 @@ export default function App() {
       setTimeout(wait, 300)
     } else requestAnimationFrame(run)
   }, [lenis])
-
-  const onTourEnd = useCallback(() => scrollTo('#residences'), [scrollTo])
 
   const explore = useCallback((i) => {
     lenis?.scrollTo(0, { duration: 1.6, onComplete: () => setTimeout(() => directorRef.current?.go(i), 150) })
@@ -85,7 +81,7 @@ export default function App() {
       </header>
 
       <main>
-        <Experience tourDone={tourDone} onTourEnd={onTourEnd} onSkip={() => scrollTo('#residences')} lenis={lenis} directorRef={directorRef} />
+        <Experience lenis={lenis} directorRef={directorRef} onGoTo={scrollTo} />
         <Residences onExplore={explore} />
         <Story />
         <Location />
