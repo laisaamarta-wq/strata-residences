@@ -242,6 +242,8 @@ export class Director {
   // ---------- zones inside a floor ----------
   resetZones(i) {
     const imgs = this.els.interiors[i].querySelectorAll('img')
+    this.drift?.kill()
+    gsap.killTweensOf(imgs)
     imgs.forEach((im, k) => gsap.set(im, { opacity: k === 0 ? 1 : 0, xPercent: 0, scale: 1 }))
     this.startDrift(imgs[0])
   }
@@ -252,15 +254,22 @@ export class Director {
   }
   setZone(z) {
     if (this.mode !== 'floor' || z === this.zone) return
-    const imgs = this.els.interiors[this.active].querySelectorAll('img')
-    const cur = imgs[this.zone], nxt = imgs[z]
+    const imgs = [...this.els.interiors[this.active].querySelectorAll('img')]
+    const nxt = imgs[z]
     if (!nxt) return
     const dir = z > this.zone ? 1 : -1
     this.loadImg(nxt)
     this.drift?.kill()
-    gsap.to(cur, { opacity: 0, xPercent: -4 * dir, scale: 1.08, duration: 1.0, ease: 'power2.inOut' })
-    gsap.fromTo(nxt, { opacity: 0, xPercent: 5 * dir, scale: 1.14 },
-      { opacity: 1, xPercent: 0, scale: 1.0, duration: 1.3, ease: 'power3.out', delay: 0.1, onComplete: () => this.startDrift(nxt) })
+    // Interruption-safe: every other image fades out from wherever it currently is,
+    // so rapid switching never leaves two rooms stacked on screen.
+    imgs.forEach((im) => {
+      if (im === nxt) return
+      gsap.to(im, { opacity: 0, xPercent: -2.5 * dir, scale: 1.04, duration: 0.9, ease: 'power2.inOut', overwrite: true })
+    })
+    const midway = +gsap.getProperty(nxt, 'opacity') > 0.05
+    const to = { opacity: 1, xPercent: 0, scale: 1, duration: 1.1, ease: 'power3.out', overwrite: true, onComplete: () => this.startDrift(nxt) }
+    if (midway) gsap.to(nxt, to)
+    else gsap.fromTo(nxt, { opacity: 0, xPercent: 3 * dir, scale: 1.06 }, { ...to, delay: 0.08 })
     this.zone = z
     this.emit()
   }

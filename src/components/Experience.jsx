@@ -5,13 +5,15 @@ import { Director } from '../engine/director.js'
 import { toImage, toScreen, isMobile } from '../engine/camera.js'
 import Plan from './Plan.jsx'
 
+const REDUCED = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 const VIEWS = [
   { id: 'space', label: '3D Space' },
   { id: 'plan', label: 'Floor plan' },
   { id: 'details', label: 'Details' },
 ]
 
-export default function Experience({ lenis, directorRef, onGoTo }) {
+export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   const stageRef = useRef(null)
   const worldRef = useRef(null)
   const tiltRef = useRef(null)
@@ -77,13 +79,22 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
     if (inside) lenis.stop()
     else lenis.start()
   }, [inside, lenis])
+  useEffect(() => { onUiChange?.({ inside, details: view === 'details' && ui === 'floor' }) }, [inside, view, ui, onUiChange])
+
+  // Back is progressive: an open panel (plan / details) closes first, then the floor.
+  const viewRef = useRef(view)
+  viewRef.current = view
 
   useEffect(() => {
-    let acc = 0, accT = 0, touchY = null
+    let acc = 0, accT = 0, touchY = null, coolUntil = 0
     const D = () => dir.current
-    // panels with their own scroll (details sheet, plan) keep their gestures
-    const ownScroll = (t) => t instanceof Element && t.closest('.details-in, .plan-layer')
-    const exit = () => { if (D().mode === 'floor') D().back() }
+    // the details sheet has its own scroll and keeps its gestures
+    const ownScroll = (t) => t instanceof Element && t.closest('.details-in')
+    const exit = () => {
+      if (D().mode !== 'floor') return
+      if (viewRef.current !== 'space') setView('space')
+      else D().back()
+    }
     const onWheel = (e) => {
       if (D().mode === 'overview') return // normal page scroll
       if (ownScroll(e.target)) return
@@ -92,7 +103,7 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
       if (now - accT > 220) acc = 0
       accT = now
       acc += e.deltaY
-      if (Math.abs(acc) > 40) { acc = 0; exit() }
+      if (Math.abs(acc) > 40) { acc = 0; if (performance.now() > coolUntil) { coolUntil = performance.now() + 700; exit() } }
     }
     const onTS = (e) => { touchY = ownScroll(e.target) ? null : e.touches[0].clientY }
     const onTM = (e) => { if (D().mode !== 'overview' && touchY !== null && e.cancelable) e.preventDefault() }
@@ -149,7 +160,7 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
       lx(sp.x); ly(sp.y)
       if (e.pointerType !== 'mouse') return
       const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
-      if (D.mode === 'overview') { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
+      if (D.mode === 'overview' && !REDUCED) { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
       if (D.mode !== 'overview') return
       const p = toImage(D.L, sp.x, sp.y)
       const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
@@ -313,7 +324,7 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
           </button>
 
           <div className="floor-head">
-            <p className="mono f1"><span>Level</span><span>{fl.elevation} m</span><span>{fl.kind}</span></p>
+            <p className="mono f1"><span>Level {fl.label}</span><span>{fl.elevation} m</span><span>{fl.kind}</span></p>
             <div className="floor-num serif f2">{fl.num}</div>
             <h2 className="floor-name serif f3">{fl.name}</h2>
             <p className="mono f4 floor-hour"><span className="sun" />{fl.hour} — {fl.light} · {fl.material}</p>
@@ -325,7 +336,7 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
             ))}
           </dl>
 
-          <div className="views ui-block f3" role="tablist">
+          <div className="views ui-block f3" role="tablist" aria-label="Residence view">
             {VIEWS.map((v) => (
               <button key={v.id} role="tab" aria-selected={view === v.id} className={view === v.id ? 'on' : ''}
                 onClick={(e) => { e.stopPropagation(); setView(v.id) }}>{v.label}</button>
@@ -343,7 +354,7 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
             ))}
           </div>
 
-          <div className="plan-layer ui-block" data-lenis-prevent onClick={(e) => e.stopPropagation()}>
+          <div className="plan-layer ui-block" inert={view !== 'plan' || undefined} onClick={(e) => e.stopPropagation()}>
             {view === 'plan' && (
               <div className="plan-wrap">
                 <p className="mono plan-cap"><span>Floor plan</span><span>{fl.name}</span><span>Typical residence · not to scale</span></p>
@@ -353,23 +364,38 @@ export default function Experience({ lenis, directorRef, onGoTo }) {
             )}
           </div>
 
-          <aside className="details ui-block" onClick={(e) => e.stopPropagation()} aria-hidden={view !== 'details'}>
+          <aside className="details ui-block" onClick={(e) => e.stopPropagation()} aria-label={`${fl.name} — details`}
+            aria-hidden={view !== 'details'} inert={view !== 'details' || undefined}>
             <div className="details-in" data-lenis-prevent>
-              <p className="mono d-kicker">Level {fl.label} · {fl.kind}</p>
-              <h3 className="serif">{fl.name}</h3>
-              <p className="d-intro">{fl.intro}</p>
-              <table className="d-table">
-                <tbody>{fl.specs.map(([k, v]) => <tr key={k}><th className="mono">{k}</th><td>{v}</td></tr>)}</tbody>
-              </table>
-              <p className="mono d-sub">Materials</p>
-              <ul className="d-palette">
-                {fl.palette.map(([n, c]) => <li key={n}><i style={{ background: c }} />{n}</li>)}
-              </ul>
-              <p className="mono d-sub">Features</p>
-              <ul className="d-features">{fl.features.map((x) => <li key={x}>{x}</li>)}</ul>
-              <div className="d-foot">
-                <span className="d-price serif">{fl.price}</span>
-                <a className="btn" href="#enquire" onClick={(e) => { e.preventDefault(); onGoTo('#enquire') }}>Request a private viewing</a>
+              <div className="d-top" style={{ '--d': 0 }}>
+                <p className="mono d-kicker">Level {fl.label} · {fl.kind}</p>
+                <button className="d-close mono" onClick={() => setView('space')} aria-label="Close details">Close <i aria-hidden="true" /></button>
+              </div>
+              <h3 className="serif" style={{ '--d': 1 }}>{fl.name}</h3>
+              <p className="d-intro" style={{ '--d': 2 }}>{fl.intro}</p>
+              <dl className="d-key" style={{ '--d': 3 }}>
+                {fl.specs.slice(0, 3).map(([k, v]) => (
+                  <div key={k}><dt className="mono">{k}</dt><dd className={`serif ${String(v).length > 8 ? 'is-long' : ''}`}>{v}</dd></div>
+                ))}
+              </dl>
+              <dl className="d-rows" style={{ '--d': 4 }}>
+                {fl.specs.slice(3).map(([k, v]) => (
+                  <div key={k}><dt className="mono">{k}</dt><dd>{v}</dd></div>
+                ))}
+              </dl>
+              <div className="d-block" style={{ '--d': 5 }}>
+                <p className="mono d-sub">Materials</p>
+                <ul className="d-palette">
+                  {fl.palette.map(([n, c]) => <li key={n}><i style={{ background: c }} />{n}</li>)}
+                </ul>
+              </div>
+              <div className="d-block" style={{ '--d': 6 }}>
+                <p className="mono d-sub">Features</p>
+                <ul className="d-features">{fl.features.map((x) => <li key={x}>{x}</li>)}</ul>
+              </div>
+              <div className="d-foot" style={{ '--d': 7 }}>
+                <div><p className="mono d-sub">{fl.id === 'g' ? 'Access' : 'Price'}</p><span className="d-price serif">{fl.price}</span></div>
+                <a className="btn" href="#enquire" onClick={(e) => { e.preventDefault(); onGoTo('#enquire') }}>Request a private viewing <span className="btn-arrow" aria-hidden="true">→</span></a>
               </div>
             </div>
           </aside>
