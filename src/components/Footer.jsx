@@ -21,7 +21,7 @@ export default function Footer() {
         </div>
         <div className="foot-base mono">
           <span className="wordmark">STRATA</span>
-          <span>A concept project — the building, names, figures and prices are fictional. Visuals generated with AI.</span>
+          <span>A concept project — the building, names, figures and prices are fictional. Visuals generated with AI. <a className="foot-case" href="/behind-the-case">Behind the case →</a></span>
           <span>56°57′11″ N · 24°05′06″ E</span>
         </div>
       </div>

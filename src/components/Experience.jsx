@@ -33,6 +33,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   const [view, setView] = useState('space')
   const [passing, setPassing] = useState(null)
   const [vp, setVp] = useState({ w: 1440, h: 900 })
+  const [introText, setIntroText] = useState(REDUCED)
   const shown = hover >= 0 ? hover : preview
 
   const onState = useCallback((s) => {
@@ -62,10 +63,35 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     document.fonts?.ready.then(() => d.resize())
     const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1500))
     idle(() => d.preloadAllFacades())
-    // entrance
-    gsap.fromTo(worldRef.current.parentElement, { opacity: 0, scale: 1.06, filter: 'blur(10px)' },
-      { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 2.2, ease: 'power3.out', delay: 0.1, transformOrigin: '60% 60%' })
-    return () => window.removeEventListener('resize', onR)
+
+    // ---- opening: the building is assembled floor by floor, then the site begins ----
+    // The camera fades up on the empty riverbank and settles slowly while the slabs are
+    // laid; the last frame of the assembly is the resting hero. Nothing waits on it:
+    // scroll stays free, and a click or a floor choice completes it at once.
+    const tilt = worldRef.current.parentElement
+    let alive = true
+    if (REDUCED) {
+      gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 0.6 })
+    } else {
+      gsap.set(tilt, { opacity: 0 })
+      gsap.set(masterRef.current, { opacity: 0 })
+      const parts = [plateRef.current, ...sliceRefs.current]
+      const ready = Promise.all(parts.map((im) => (im.decode ? im.decode().catch(() => {}) : null)))
+      const late = new Promise((r) => setTimeout(() => r('late'), 1600))
+      Promise.race([ready, late]).then((v) => {
+        if (!alive) return
+        gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 1.1, ease: 'sine.out' })
+        if (v === 'late') {
+          // slow connection: no construction, the finished building simply arrives
+          gsap.set(masterRef.current, { opacity: 1 })
+          setIntroText(true)
+          return
+        }
+        gsap.fromTo(tilt, { scale: 1.035 }, { scale: 1, duration: 4.8, ease: 'sine.out', transformOrigin: '60% 60%' })
+        d.assemble({ onText: () => setIntroText(true) })
+      })
+    }
+    return () => { alive = false; window.removeEventListener('resize', onR) }
   }, [onState, directorRef])
 
   // ---- mobile approach: the camera is a function of the stage's scroll ----
@@ -186,7 +212,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
       if (e.pointerType !== 'mouse') return
       const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
       if (D.mode === 'overview' && !REDUCED) { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
-      if (D.mode !== 'overview') return
+      if (D.mode !== 'overview' || D.assembling) return
       const p = toImage(D.cam(), sp.x, sp.y)
       const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
       setHover((h) => (h === i ? h : i))
@@ -209,6 +235,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     const D = dir.current
     if (D.mode !== 'overview') return
     if (e.target.closest('button, a, .ui-block')) return
+    if (D.assembling) { D.skipAssembly(); return }
     const sp = stagePoint(e)
     const p = toImage(D.cam(), sp.x, sp.y) // the camera as it is on screen, approach included
     const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
@@ -234,12 +261,13 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
 
   return (
     <section id="project" ref={stageRef}
-      className={`stage ui-${ui} mode-${st.mode} view-${view} ${shown >= 0 ? 'has-hover' : ''}`}
+      className={`stage ui-${ui} mode-${st.mode} view-${view} ${shown >= 0 ? 'has-hover' : ''} ${introText ? 'intro-on' : ''}`}
       onClick={onStageClick}>
       <div className="stage-sky" />
       <div className="tilt" ref={tiltRef}>
         <div className="world" ref={worldRef} style={{ width: MASTER.w, height: MASTER.h }}>
-          <img ref={plateRef} className="plate" src={img('plate', 900)} alt="" />
+          <img ref={plateRef} className="plate" src={img('plate', 900)} srcSet={`${img('plate', 900)} 900w, ${img('plate', 1600)} 1600w`}
+            sizes="(max-width: 760px) 140vw, 120vw" alt="" />
           <img ref={masterRef} className="master" alt="STRATA — a seven-level residential building on the Ķīpsala riverbank at dusk"
             src={img('hero', 2688)} srcSet={`${img('hero', 1400)} 1400w, ${img('hero', 2688)} 2688w`}
             sizes="(max-width: 760px) 140vw, 120vw" fetchPriority="high" />

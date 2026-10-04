@@ -9,9 +9,10 @@ export function baseLayout(vw, vh, heroBottom = 0) {
   const mobile = isMobile(vw, vh)
   let s, cx, cy
   if (mobile) {
-    // building sits in the band between the headline and the floor bar
-    const top = Math.max(vh * 0.43, heroBottom), bottom = vh - 92
-    s = Math.min((vw * 0.86) / B.w, (bottom - top) / B.h)
+    // the building is the hero: it takes the whole band from just under the headline
+    // copy down to the floor bar (which sits 16 px + 48 px above the stage bottom)
+    const top = Math.max(vh * 0.3, heroBottom - 8), bottom = vh - 70
+    s = Math.min((vw * 0.94) / B.w, (bottom - top) / B.h)
     cx = vw / 2
     cy = (top + bottom) / 2
   } else {

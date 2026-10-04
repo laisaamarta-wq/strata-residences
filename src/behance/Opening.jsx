@@ -2,21 +2,22 @@ import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { FLOORS, MASTER, BUILDING_BOX as BB, img } from '../data.js'
+import { assemblyStart, addAssembly } from '../engine/assembly.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /*
- * 00 — Opening.
- * The building is laid down the way it is named: in strata. The empty riverbank
- * (the production plate), then the seven floor slices of the production stage
- * settle one on top of the other, ground floor first, while a single slow camera
- * approaches. The full photograph resolves over the stack, Level 04 is drawn,
- * and one sentence states the idea. The entry itself is left to the next scene.
+ * 00 — Opening of Behind the Case.
+ * The same assembly as the opening of the site (engine/assembly.js): the empty
+ * riverbank, then the seven floor slices lowered into place, ground floor first,
+ * under one slow approaching camera. The building is the first thing seen; the
+ * photograph resolves over the stack, holds, Level 04 is drawn — and only then
+ * does the title arrive. The entry itself is left to a later scene.
  *
  * Time drives the loop; scroll drives the push that carries it into the case study.
  */
 
-const LOOP = 11.4
+const LOOP = 12
 const FOCUS = { x: BB.x + BB.w / 2, y: 640 } // between the building's centre and Level 04
 const F04 = FLOORS[4]
 
@@ -42,7 +43,6 @@ export default function Opening() {
   const push = useRef(null)
   const world = useRef(null)
   const veil = useRef(null)
-  const title = useRef(null)
   const meter = useRef(null)
   const master = useRef(null)
   const slices = useRef([])
@@ -65,8 +65,7 @@ export default function Opening() {
     const tl = gsap.timeline({ repeat: reduce ? 0 : -1, defaults: { overwrite: false } })
     // initial state of every loop
     tl.set(veil.current, { opacity: 1 }, 0)
-      .set(title.current, { opacity: 0, filter: 'blur(14px)', letterSpacing: '0.7em', y: 0 }, 0)
-      .set(slices.current, { opacity: 0, y: -70, filter: 'blur(5px)' }, 0)
+      .set(slices.current, assemblyStart(), 0)
       .set(master.current, { opacity: 0 }, 0)
       .set(line.current, { strokeDashoffset: 1 }, 0)
       .set(fill.current, { opacity: 0 }, 0)
@@ -74,28 +73,20 @@ export default function Opening() {
       .set(meter.current, { opacity: 0 }, 0)
       .set(cam, { k: 0, onComplete: put }, 0)
 
-    // the name first, on black
-    tl.to(title.current, { opacity: 1, filter: 'blur(0px)', letterSpacing: '0.46em', duration: 1.5, ease: 'power3.out' }, 0.25)
-    // the riverbank, empty, and the camera begins to move
-    tl.to(veil.current, { opacity: 0, duration: 1.9, ease: 'sine.inOut' }, 1.0)
-    tl.to(cam, { k: 1, duration: 8.6, ease: 'sine.inOut', onUpdate: put }, 1.1)
-    tl.to(title.current, { opacity: 0, filter: 'blur(10px)', letterSpacing: '0.62em', y: -16, duration: 1.1, ease: 'power2.in' }, 2.45)
-    // strata: seven slabs settle, ground floor first
-    tl.to(meter.current, { opacity: 0.8, duration: 0.6 }, 2.7)
-    slices.current.forEach((el, i) => {
-      const t = 2.75 + i * 0.36
-      tl.to(el, { y: 0, duration: 1.15, ease: 'power3.out' }, t)
-        .to(el, { opacity: 1, duration: 0.55, ease: 'power1.out' }, t)
-        .to(el, { filter: 'blur(0px)', duration: 0.9, ease: 'power2.out' }, t)
-        .call(setMeter, [i], t)
-    })
-    // the photograph resolves over the stack — reflections, light, the whole site
-    tl.to(master.current, { opacity: 1, duration: 1.3, ease: 'sine.inOut' }, 5.55)
-    tl.to(meter.current, { opacity: 0, duration: 0.6 }, 5.9)
+    // FRAME 01 — the empty riverbank, and the camera already moving
+    tl.to(veil.current, { opacity: 0, duration: 1.5, ease: 'sine.inOut' }, 0.2)
+    tl.to(cam, { k: 1, duration: 8.8, ease: 'sine.inOut', onUpdate: put }, 0.2)
+    // FRAMES 02–06 — floor by floor, ground first; a quiet meter follows the height
+    tl.to(meter.current, { opacity: 0.8, duration: 0.6 }, 1.0)
+    const landed = addAssembly(tl, slices.current, 1.1, setMeter)
+    tl.to(meter.current, { opacity: 0, duration: 0.6 }, landed + 0.1)
+    // FRAME 07 — the photograph resolves over the stack, and the building holds
+    tl.to(master.current, { opacity: 1, duration: 1.3, ease: 'sine.inOut' }, landed - 0.45)
     // Level 04 is drawn: this is where the visitor will go in
-    tl.to(line.current, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, 6.3)
-    tl.to(fill.current, { opacity: 0.1, duration: 1.2, ease: 'sine.inOut' }, 6.5)
-    tl.to(end.current.children, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', stagger: 0.14 }, 6.7)
+    tl.to(line.current, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, landed + 1.0)
+    tl.to(fill.current, { opacity: 0.1, duration: 1.2, ease: 'sine.inOut' }, landed + 1.2)
+    // FRAME 08 — STRATA Residences, Behind the Case
+    tl.to(end.current.children, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', stagger: 0.16 }, landed + 1.4)
     // close the loop on black
     tl.to(veil.current, { opacity: 1, duration: 0.9, ease: 'power2.in' }, LOOP - 1.0)
     tl.set({}, {}, LOOP)
@@ -144,11 +135,10 @@ export default function Opening() {
         <div className="cs-op-shade" />
         <div className="cs-op-dim" />
         <div className="cs-op-veil" ref={veil} />
-        <h1 className="wordmark cs-op-title" ref={title}>STRATA</h1>
         <p className="mono cs-op-meter" ref={meter} aria-hidden="true" />
         <div className="cs-op-end" ref={end}>
-          <p className="wordmark cs-op-mark">STRATA</p>
-          <p className="serif cs-op-line1">A residence you enter,<br /><em>floor by floor.</em></p>
+          <p className="wordmark cs-op-mark">STRATA RESIDENCES</p>
+          <h1 className="serif cs-op-line1">Behind <em>the case.</em></h1>
           <p className="mono cs-op-sub"><span>Immersive architectural digital experience</span><span>Ķīpsala, Riga</span></p>
         </div>
         <div className="cs-op-cue mono"><span className="cs-cue-line" />Scroll</div>

@@ -187,6 +187,9 @@ em { font-style: italic; }
 .hero-ui .r1, .hero-ui .r3, .hero-ui .r4 { animation: fadeUp 1.6s var(--ease-out) both; }
 .hero-ui .r1 { animation-delay: .5s; } .hero-ui .r3 { animation-delay: 1.15s; } .hero-ui .r4 { animation-delay: 1.35s; }
 .hero-title .ln > span { animation: lineUp 1.7s var(--ease-out) both; }
+/* the headline waits for the building: its entrance starts during the last floors of the assembly */
+.stage:not(.intro-on) .hero-ui .r1, .stage:not(.intro-on) .hero-ui .r3, .stage:not(.intro-on) .hero-ui .r4,
+.stage:not(.intro-on) .hero-title .ln > span { animation-play-state: paused; }
 .hero-title .ln:nth-child(1) > span { animation-delay: .65s; } .hero-title .ln:nth-child(2) > span { animation-delay: .8s; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(24px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
 @keyframes lineUp { from { transform: translateY(105%); } to { transform: none; } }
@@ -504,6 +507,8 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
 .foot-grid a:not(.btn) { border-bottom: 1px solid rgba(18, 17, 16, .3); }
 .foot-base { display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: 26px; border-top: 1px solid rgba(18, 17, 16, .2); font-size: 9.5px; }
 .foot-base span:nth-child(2) { opacity: .55; max-width: 46em; }
+.foot-case { border-bottom: 1px solid currentColor; white-space: nowrap; margin-left: 6px; transition: opacity .3s; }
+.foot-case:hover { opacity: .6; }
 
 /* ==========================================================================
    Tablet / mobile — a separate composition, not a shrunk desktop
@@ -542,15 +547,22 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
   .menu-open .burger i:first-child { transform: translateY(3.5px) rotate(45deg); }
   .menu-open .burger i:last-child { transform: translateY(-3.5px) rotate(-45deg); }
 
+  /* the photograph is taller on screen here: its top edge melts into the sky over a longer run */
+  .world > img.plate, .world > img.master {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 16%); mask-image: linear-gradient(180deg, transparent 0%, #000 16%); }
   .hero-ui { top: calc(var(--hdr) + 18px); transform: none; max-width: none; right: var(--gutter); }
   .hero-ui::before { display: none; }
   .stage:not(.ui-overview) .hero-ui { transform: translateY(-30px); }
-  .eyebrow { flex-direction: column; gap: 6px; margin-bottom: 16px; font-size: 9.5px; }
+  /* architecture first: the eyebrow keeps one line (the header already says Ķīpsala · Riga),
+     the headline steps down a little, and the building gets the room */
+  .eyebrow { flex-direction: column; gap: 6px; margin-bottom: 14px; font-size: 9.5px; }
+  .eyebrow span:first-child { display: none; }
   .eyebrow span + span::before { display: none; }
-  .hero-title { font-size: clamp(50px, 15vw, 76px); margin-bottom: 14px; }
+  .hero-title { font-size: clamp(46px, 13vw, 68px); margin-bottom: 12px; }
   .hero-copy { font-size: 14px; margin-bottom: 0; max-width: 22em; }
   .hero-meta { display: none; }
-  .scroll-cue { bottom: 80px; gap: 8px; }
+  /* the cue would sit on the facade; the floor bar and the page below already invite the scroll */
+  .scroll-cue { display: none; }
   .scroll-cue > span:not(.cue-line) { font-size: 9px; }
   .scroll-cue .cue-line { height: 28px; }
   .scroll-cue .cue-line::after { height: 28px; }

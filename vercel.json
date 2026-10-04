@@ -1,6 +1,16 @@
 {
   "rewrites": [
-    { "source": "/behance", "destination": "/behance/index.html" },
-    { "source": "/case-study", "destination": "/behance/index.html" }
+    {
+      "source": "/behance",
+      "destination": "/behance/index.html"
+    },
+    {
+      "source": "/case-study",
+      "destination": "/behance/index.html"
+    },
+    {
+      "source": "/behind-the-case",
+      "destination": "/behance/index.html"
+    }
   ]
 }
