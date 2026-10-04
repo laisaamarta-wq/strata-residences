@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Lenis from 'lenis'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -7,39 +7,26 @@ import EntryStage from './EntryStage.jsx'
 import BuildingIndex from './BuildingIndex.jsx'
 import PlanStudio from './PlanStudio.jsx'
 import Film from './Film.jsx'
+import Route from './Route.jsx'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const LIVE = 'https://strata-residences-mu.vercel.app/'
 
-const INTRO = [
-  ['Concept', 'Seven floors, seven hours. Each level is tuned to the light it receives — misted mornings in the garden residences, a river sunset on level 04, blue hour on the roof.'],
-  ['The interface', 'The building itself is the menu. Hover a floor to light it, click to enter: the camera dollies to the slab, cuts to the facade and moves through the glass into the rooms.'],
-  ['What was made', 'Art direction and imagery, the spatial UX, a GSAP camera system, interactive floor plans, an editorial details layer, responsive behaviour and the production front-end.'],
-  ['Key idea', 'Click enters. Scroll leaves. The visitor always knows where they are in the building — and is never trapped inside it.'],
-]
-
-const UX = [
-  ['Building', 'Hover lights a floor · click enters', 'The facade is the navigation. Seven hit areas, drawn in the coordinates of the photograph itself.'],
-  ['Level', 'The camera moves, the page holds still', 'A dolly, a matched cut, a push through the glass. While a residence is open the page underneath is frozen and out of the tab order.'],
-  ['Room', '3D Space · Floor plan · Details', 'Three ways to read the same home: the photograph, the drawing, the facts. Rooms on the plan are doors back into the photographs.'],
-  ['Detail', 'An editorial layer, not a modal', 'Specifications, materials and price open as a sliding wall of paper beside the room — the space stays in view.'],
-]
-
-const RULES = [
-  ['Click', 'enter a level'],
-  ['Scroll · swipe · Esc', 'one step back'],
-  ['Back is progressive', 'panel → room → building'],
-  ['Elevator', 'level to level without leaving'],
+const FACTS = [
+  ['Concept', 'Seven floors, seven hours'],
+  ['Role', 'Art direction · UX/UI · Motion · Front-end'],
+  ['Stack', 'React · GSAP · Lenis · Vite'],
+  ['Imagery', 'AI-generated with Higgsfield, art-directed'],
 ]
 
 const MOVES = [
-  { name: 'Enter', film: 'd-enter', spec: 'Building → floor', t: '≈ 3.5 s · four phases', d: 'The flat image swaps for floor slices, the camera dollies for 1.45 s (power3.inOut), a matched cut lands on the facade at 1.2 s and a soft light bloom carries it through the glass.' },
-  { name: 'Rooms', film: 'd-rooms', spec: 'Room → room', t: '1.1 s · power3.out', d: 'A direction-aware cross-fade with a 3 % drift toward the room you chose. Interruption-safe: rapid clicks never leave two rooms stacked.' },
-  { name: 'Floor plan', film: 'd-plan', spec: 'Photograph → drawing', t: '0.6 s · 60 ms per line', d: 'The plan draws itself wall by wall over the room. Highlighted rooms are doors: select one and the camera returns to that space.' },
-  { name: 'Details', film: 'd-details', spec: 'Room → editorial layer', t: '0.65 s clip-path · 45 ms stagger', d: 'A sliding wall of paper — no backdrop, no shadow, one hairline. The view switcher re-centres beside it.' },
-  { name: 'Elevator', film: 'd-elevator', spec: 'Floor → floor', t: '0.75 s + 0.32 s per level', d: 'Step back to the facade, travel vertically past every level while the floor numerals pass by, then push into the new interior.' },
-  { name: 'Return', film: 'd-return', spec: 'Floor → building', t: 'Enter timeline × −1.4', d: 'The way out is the way in, played backwards. Scroll, swipe, Esc or “The building” all step out.' },
+  { name: 'Enter', film: 'd-enter', spec: 'Building → floor', t: '3.5 s · four phases', d: 'Slices part, a matched cut, a push through the glass.' },
+  { name: 'Rooms', film: 'd-rooms', spec: 'Room → room', t: '1.1 s · power3.out', d: 'A direction-aware cross-fade. Rapid clicks never stack two rooms.' },
+  { name: 'Floor plan', film: 'd-plan', spec: 'Photograph → drawing', t: '60 ms per line', d: 'The plan draws itself over the room. Rooms are doors.' },
+  { name: 'Details', film: 'd-details', spec: 'Room → editorial layer', t: '0.65 s clip-path', d: 'A sliding wall of paper — no modal, no shadow.' },
+  { name: 'Elevator', film: 'd-elevator', spec: 'Floor → floor', t: '0.75 s + 0.32 s / level', d: 'Back to the facade, past every level, into the next home.' },
+  { name: 'Return', film: 'd-return', spec: 'Floor → building', t: 'Enter × −1.4', d: 'The way in, played backwards.' },
 ]
 
 const HOURS = [
@@ -56,25 +43,22 @@ const MATERIALS = [
 
 // UI close-ups, cropped from the recordings (fractions of the 1920 × 1080 frame)
 const CROPS = [
-  { film: 'd-label', k: 'Floor label', d: 'Follows the hovered slab: number, name, size, the hour it was tuned to.', c: { x: 0.44, y: 0.14, w: 0.52, h: 0.74 } },
-  { film: 'd-elevator', k: 'Level bar', d: 'Tracks the camera — the active level and elevation update as the elevator passes each floor.', c: { x: 0.83, y: 0.22, w: 0.17, h: 0.5 } },
-  { film: 'd-details', k: 'View switcher', d: 'One ink pill slides between 3D Space, Floor plan and Details.', c: { x: 0.24, y: 0.855, w: 0.34, h: 0.11 } },
-  { film: 'd-details', k: 'Details layer', d: 'Kicker, name, three key figures, then the rest — readable at a glance, scrollable in depth.', c: { x: 0.64, y: 0, w: 0.36, h: 0.66 } },
+  { film: 'd-label', k: 'Floor label', d: 'Number, name, size, hour.', c: { x: 0.44, y: 0.14, w: 0.52, h: 0.74 } },
+  { film: 'd-elevator', start: 1.6, k: 'Level bar', d: 'Tracks the camera, floor by floor.', c: { x: 0.83, y: 0.22, w: 0.17, h: 0.5 } },
+  { film: 'd-details', start: 2, k: 'View switcher', d: 'One ink pill, three readings.', c: { x: 0.24, y: 0.855, w: 0.34, h: 0.11 } },
+  { film: 'd-details', start: 2, k: 'Details layer', d: 'Three key figures first, the rest on scroll.', c: { x: 0.64, y: 0, w: 0.36, h: 0.66 } },
 ]
 
-const PAGE = [
-  ['Residences', 'A schedule of fifteen homes; each row previews its interior under the cursor.'],
-  ['Architecture', 'Six chapters on a sticky frame that wipes open image by image.'],
-  ['Every level keeps a different hour', 'The seven hours, set over the third-floor terrace at golden hour.'],
-  ['Location', 'A drawn map of Ķīpsala that inks itself, with walking rings and routes.'],
-  ['Enquire', 'Private viewings — the single call to action, repeated in every details layer.'],
-]
+const PAGE = ['Residences', 'Architecture', 'Hours', 'Location', 'Enquire']
 
 const DEVICES = [
-  { k: 'Desktop', film: 'd-walk', d: 'The building stands right of the headline. Hover previews a floor, a click enters; the level bar on the right tracks the camera.' },
-  { k: 'Tablet', film: 't-full', d: 'In portrait the building drops below the headline. One tap previews a level; a second — “Enter level” — goes in.' },
-  { k: 'Mobile', film: 'm-full', d: 'Controls move into the thumb zone, Details becomes a full sheet of paper, and a swipe steps back out of the residence.' },
+  { k: 'Desktop', d: 'Hover previews, click enters.' },
+  { k: 'Tablet', d: 'Tap to preview, tap to enter.' },
+  { k: 'Mobile', d: 'Thumb-zone controls, swipe to step out.' },
 ]
+
+// the opening film: production camera, Level 04, 30 fps — STRATA appears once the room opens
+const COVER_REVEAL = [7.0, 9.75]
 
 const Words = ({ text, className }) => (
   <span className={className}>{text.split(' ').map((w, i) => <span className="w" key={i}>{w} </span>)}</span>
@@ -134,16 +118,6 @@ export default function CaseStudy() {
           scrollTrigger: { trigger: el, start: 'top 85%' } })
       })
 
-      // UX section: rules drawn like a section drawing
-      gsap.utils.toArray('.cs-ux-row').forEach((row) => {
-        gsap.fromTo(row.querySelector('.cs-ux-rule'), { scaleX: 0 }, { scaleX: 1, ease: 'none', transformOrigin: '0 50%',
-          scrollTrigger: { trigger: row, start: 'top 85%', end: 'top 45%', scrub: true } })
-        gsap.fromTo(row.querySelectorAll('.cs-ux-in > *'), { opacity: 0, y: 18 }, { opacity: 1, y: 0, stagger: 0.08, duration: 1, ease: 'power3.out',
-          scrollTrigger: { trigger: row, start: 'top 75%' } })
-      })
-      gsap.fromTo('.cs-section-line', { scaleY: 0 }, { scaleY: 1, ease: 'none', transformOrigin: '50% 0',
-        scrollTrigger: { trigger: '.cs-ux-list', start: 'top 70%', end: 'bottom 60%', scrub: true } })
-
       const mm = gsap.matchMedia()
       mm.add('(min-width: 900px)', () => {
         // motion: a horizontal strip of real recordings, moved by vertical scroll
@@ -197,6 +171,8 @@ export default function CaseStudy() {
   }, [])
 
   const h = FLOORS[HOURS[hour].f]
+  const [reveal, setReveal] = useState(false)
+  const onCoverTime = useCallback((t) => setReveal(t > COVER_REVEAL[0] && t < COVER_REVEAL[1]), [])
 
   return (
     <div className="cs" ref={root}>
@@ -207,108 +183,54 @@ export default function CaseStudy() {
       </header>
 
       <main id="top">
-        {/* 00 — the production stage, entered by scroll */}
-        <EntryStage lenis={lenis} />
+        {/* 00 — the opening: the production camera walks into Level 04 on its own */}
+        <section className="cs-cover" data-chapter="00 — Arrival">
+          <Film name="cover" eager restart className="cs-cover-film" onTime={onCoverTime}
+            label="The production camera moves from the building at dusk into a residence on level 04" />
+          <div className="cs-cover-shade" />
+          <p className="mono cs-cover-k"><span>Case study</span><span>Residential digital experience</span></p>
+          <div className={`cs-cover-title ${reveal ? 'on' : ''}`}>
+            <h1 className="wordmark">STRATA</h1>
+            <p className="mono">Residences <span /> Ķīpsala, Riga</p>
+          </div>
+          <p className="mono cs-cover-tag">Production camera · Level 04 · 19:10</p>
+          <div className="cs-cover-cue mono"><span className="cs-cue-line" />Scroll</div>
+        </section>
 
-        {/* 01 — introduction, sliding over the residence */}
+        {/* 01 — a short introduction */}
         <section className="cs-sec cs-intro" data-chapter="01 — The residence">
           <div className="cs-wrap">
             <Kicker n="01">The residence</Kicker>
-            <p className="mono cs-intro-id"><span>STRATA</span><span>Residential experience / Riga</span></p>
             <h2 className="serif cs-lead">
-              <Words className="cs-read" text="A seven-level residence on the Ķīpsala riverbank, presented as a place you walk into — not a page you read." />
+              <Words className="cs-read" text="A seven-level residence on the Ķīpsala riverbank — and a website you enter the way you enter the building." />
             </h2>
-            <div className="cs-cols">
-              {INTRO.map(([k, t]) => (
-                <div className="cs-col cs-rise" key={k}><p className="mono cs-col-k">{k}</p><p>{t}</p></div>
-              ))}
-            </div>
             <dl className="cs-facts cs-rise">
-              <div><dt className="mono">Role</dt><dd>Art direction · UX/UI · Motion · Front-end</dd></div>
-              <div><dt className="mono">Stack</dt><dd>React 19 · GSAP 3 · Lenis · Vite</dd></div>
-              <div><dt className="mono">Imagery</dt><dd>AI-generated with Higgsfield, art-directed</dd></div>
-              <div><dt className="mono">Status</dt><dd>Concept · live on Vercel · 2026</dd></div>
+              {FACTS.map(([k, v]) => <div key={k}><dt className="mono">{k}</dt><dd>{v}</dd></div>)}
+              <div><dt className="mono">Live</dt><dd><a href={LIVE} target="_blank" rel="noopener noreferrer">strata-residences-mu.vercel.app ↗</a></dd></div>
             </dl>
           </div>
         </section>
 
-        {/* 02 — architecture: the building as an index */}
-        <section className="cs-sec cs-dark cs-arch" data-chapter="02 — Architecture">
-          <div className="cs-wrap">
-            <div className="cs-head">
-              <Kicker n="02">Architecture</Kicker>
-              <h2 className="serif cs-h cs-lines">
-                <span className="ln"><span>Seven levels,</span></span>
-                <span className="ln"><span><em>seven hours.</em></span></span>
-              </h2>
-              <p className="cs-p cs-rise">Basalt at the waterline, travertine slabs gently out of step, glass where the building meets the sky. On the site the building is the navigation: every floor is a hit area drawn in the coordinates of the photograph, so the hover, the label and the camera share one map.</p>
-            </div>
-            <BuildingIndex />
-          </div>
-        </section>
+        {/* 02 — spatial entry: the production stage, scrubbed by scroll */}
+        <EntryStage lenis={lenis} />
 
-        {/* 03 — spatial UX */}
-        <section className="cs-sec cs-ux" data-chapter="03 — Spatial experience">
-          <div className="cs-wrap">
-            <div className="cs-head cs-head-split">
-              <div>
-                <Kicker n="03">Spatial experience</Kicker>
-                <h2 className="serif cs-h cs-lines">
-                  <span className="ln"><span>Navigation as a walk</span></span>
-                  <span className="ln"><span><em>through the building.</em></span></span>
-                </h2>
-              </div>
-              <p className="cs-p cs-rise">A real-estate site usually lists apartments. STRATA puts the visitor at the front door and lets the architecture carry the hierarchy — building, level, room, detail. Every step down is a camera move, and every step has a way back.</p>
-            </div>
-            <div className="cs-ux-list">
-              <span className="cs-section-line" aria-hidden="true" />
-              {UX.map(([k, g, d], i) => (
-                <div className="cs-ux-row" key={k}>
-                  <span className="cs-ux-rule" aria-hidden="true" />
-                  <div className="cs-ux-in">
-                    <span className="mono cs-ux-n">{String(i + 1).padStart(2, '0')}</span>
-                    <h3 className="serif">{k}</h3>
-                    <p className="mono cs-ux-g">{g}</p>
-                    <p className="cs-ux-d">{d}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <ul className="cs-rules">
-              {RULES.map(([a, b]) => <li key={a} className="cs-rise"><b className="serif">{a}</b><span className="mono">{b}</span></li>)}
-            </ul>
+        {/* 03 — motion */}
+        <section className="cs-sec cs-dark cs-motion cs-over" data-chapter="03 — Motion">
+          <div className="cs-wrap cs-cap-head">
+            <Kicker n="03">Motion</Kicker>
+            <h2 className="serif cs-h cs-lines"><span className="ln"><span>One camera,</span></span><span className="ln"><span><em>six moves.</em></span></span></h2>
+            <p className="mono cs-note cs-rise">Every transition is a camera move inside one space — never a page change.</p>
           </div>
         </section>
-
-        {/* 04 — motion */}
-        <section className="cs-sec cs-dark cs-motion" data-chapter="04 — Motion">
-          <div className="cs-wrap">
-            <div className="cs-head cs-head-split">
-              <div>
-                <Kicker n="04">Motion</Kicker>
-                <h2 className="serif cs-h cs-lines">
-                  <span className="ln"><span>One camera,</span></span>
-                  <span className="ln"><span><em>six moves.</em></span></span>
-                </h2>
-              </div>
-              <p className="cs-p cs-rise">Every transition is a camera move inside one continuous space — never a page change. One GSAP director owns them all: the same easing family, the same light, and every move can be reversed or interrupted.</p>
-            </div>
-          </div>
-          <figure className="cs-cine">
-            <div className="cs-cine-frame cs-slab"><Film name="d-walk" label="Recording: entering level 04 and moving between rooms" /></div>
-            <figcaption className="mono cs-wrap"><span>Recorded from the production build</span><span>Level 04 · Walnut Residences · 1920 × 1080 · 30 fps</span></figcaption>
-          </figure>
-        </section>
-        <section className="cs-strip cs-dark" data-chapter="04 — Motion" style={{ '--n': MOVES.length }}>
+        <section className="cs-strip cs-dark" data-chapter="03 — Motion" style={{ '--n': MOVES.length }}>
           <div className="cs-strip-sticky">
             <div className="cs-strip-track">
               {MOVES.map((m, i) => (
                 <article className="cs-move" key={m.name}>
-                  <div className="cs-move-film"><Film name={m.film} label={`Recording: ${m.name}`} /></div>
+                  <div className="cs-move-film"><Film name={m.film} restart label={`Recording: ${m.name}`} /></div>
                   <div className="cs-move-text">
-                    <p className="mono cs-move-k"><span>{String(i + 1).padStart(2, '0')}</span><span>{m.spec}</span></p>
+                    <p className="mono cs-move-k"><span>{String(i + 1).padStart(2, '0')}</span><span>{m.spec}</span><span className="cs-move-t">{m.t}</span></p>
                     <h3 className="serif">{m.name}</h3>
-                    <p className="mono cs-move-t">{m.t}</p>
                     <p className="cs-move-d">{m.d}</p>
                   </div>
                 </article>
@@ -318,11 +240,35 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 05 — light & interior */}
-        <section className="cs-sec cs-light" data-chapter="05 — Light & interior">
+        {/* 04 — architecture: the building as an index */}
+        <section className="cs-sec cs-dark cs-arch" data-chapter="04 — Architecture">
+          <div className="cs-wrap">
+            <div className="cs-cap-head">
+              <Kicker n="04">Architecture</Kicker>
+              <h2 className="serif cs-h cs-lines"><span className="ln"><span>Seven levels,</span></span><span className="ln"><span><em>seven hours.</em></span></span></h2>
+              <p className="mono cs-note cs-rise">The facade is the menu — each slab a hit area drawn on the photograph.</p>
+            </div>
+            <BuildingIndex />
+          </div>
+        </section>
+
+        {/* 05 — interaction: plan and room */}
+        <section className="cs-sec cs-plan-sec cs-dark2" data-chapter="05 — Interaction">
+          <div className="cs-wrap">
+            <div className="cs-cap-head">
+              <Kicker n="05">Interaction</Kicker>
+              <h2 className="serif cs-h cs-lines"><span className="ln"><span>The drawing</span></span><span className="ln"><span><em>and the room.</em></span></span></h2>
+              <p className="mono cs-note cs-rise">Choose a level · select a highlighted room</p>
+            </div>
+            <PlanStudio />
+          </div>
+        </section>
+
+        {/* 06 — detail: light, material, visual system */}
+        <section className="cs-sec cs-light" data-chapter="06 — Detail">
           <div className="cs-wrap cs-light-grid">
             <div className="cs-light-sticky">
-              <Kicker n="05">Light & interior</Kicker>
+              <Kicker n="06">Light</Kicker>
               <h2 className="serif cs-h-s">A different hour<br /><em>on every floor.</em></h2>
               <div className="cs-clock" aria-live="polite">
                 <span className="serif cs-clock-t" key={h.id}>{h.hour}</span>
@@ -345,8 +291,6 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
-
-        {/* 06 — materiality & art direction */}
         <section className="cs-mat cs-dark" data-chapter="06 — Materiality">
           <div className="cs-mat-sticky">
             <img className="cs-mat-img" alt="Material board — basalt, travertine, bronze, oak, linen and birch" src={img('materials', 2400)} srcSet={srcset('materials')} sizes="100vw" loading="lazy" />
@@ -362,14 +306,11 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
-        <section className="cs-sec cs-art" data-chapter="06 — Art direction">
+        <section className="cs-sec cs-art" data-chapter="06 — Visual system">
           <div className="cs-wrap">
-            <div className="cs-head cs-head-split">
-              <div>
-                <Kicker n="06">Art direction</Kicker>
-                <h2 className="serif cs-h cs-lines"><span className="ln"><span>A palette for</span></span><span className="ln"><span><em>every level.</em></span></span></h2>
-              </div>
-              <p className="cs-p cs-rise">Each floor was given four materials and an hour of the day before a single image was generated. The palettes below are the ones the site uses in every details layer.</p>
+            <div className="cs-cap-head cs-cap-row">
+              <Kicker n="06">Visual system</Kicker>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Four materials,</span></span><span className="ln"><span><em>one hour, per level.</em></span></span></h2>
             </div>
             <div className="cs-pal">
               {FLOORS.map((f) => (
@@ -390,7 +331,7 @@ export default function CaseStudy() {
               </div>
               <div className="cs-type-i cs-rise">
                 <p className="mono cs-type-k"><span>Hanken Grotesk</span><span>Wordmark & reading</span></p>
-                <p className="cs-type-s2"><span className="wordmark">STRATA</span>Seven strata of stone, glass and light on the riverbank.</p>
+                <p className="cs-type-s2"><span className="wordmark">STRATA</span>Seven strata of stone, glass and light.</p>
               </div>
               <div className="cs-type-i cs-rise">
                 <p className="mono cs-type-k"><span>IBM Plex Mono</span><span>Levels, time, measure</span></p>
@@ -405,21 +346,19 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 07 — interface */}
+        {/* 07 — interface, in motion */}
         <section className="cs-sec cs-ui" data-chapter="07 — Interface">
           <div className="cs-wrap">
-            <div className="cs-head cs-head-split">
-              <div>
-                <Kicker n="07">Interface</Kicker>
-                <h2 className="serif cs-h cs-lines"><span className="ln"><span>Orientation,</span></span><span className="ln"><span><em>always in view.</em></span></span></h2>
-              </div>
-              <p className="cs-p cs-rise">Small, quiet instruments around the photograph: where you are, how high you are, what you are looking at, and how to leave. Close-ups below are cropped from the recordings, not mock-ups.</p>
+            <div className="cs-cap-head cs-cap-row">
+              <Kicker n="07">Interface</Kicker>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Orientation,</span></span><span className="ln"><span><em>always in view.</em></span></span></h2>
+              <p className="mono cs-note cs-rise">Live close-ups, cropped from the recordings</p>
             </div>
             <div className="cs-crops">
               {CROPS.map((x, i) => (
                 <figure className={`cs-crop cs-crop-${i}`} key={x.k}>
                   <div className="cs-crop-frame" style={{ aspectRatio: `${x.c.w * 1920} / ${x.c.h * 1080}` }}>
-                    <Film name={x.film} label={`Close-up: ${x.k}`}
+                    <Film name={x.film} start={x.start || 0} label={`Close-up: ${x.k}`}
                       style={{ width: `${100 / x.c.w}%`, left: `${(-x.c.x / x.c.w) * 100}%`, top: `${(-x.c.y / x.c.h) * 100}%` }} />
                   </div>
                   <figcaption><p className="mono"><span>{String(i + 1).padStart(2, '0')}</span>{x.k}</p><p>{x.d}</p></figcaption>
@@ -429,43 +368,34 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 08 — floor plans */}
-        <section className="cs-sec cs-dark cs-plan-sec" data-chapter="08 — Floor plans">
+        {/* 08 — navigation: a route through the building */}
+        <section className="cs-sec cs-nav" data-chapter="08 — Navigation">
           <div className="cs-wrap">
-            <div className="cs-head cs-head-split">
-              <div>
-                <Kicker n="08">Floor plans</Kicker>
-                <h2 className="serif cs-h cs-lines"><span className="ln"><span>The drawing and</span></span><span className="ln"><span><em>the room.</em></span></span></h2>
+            <div className="cs-cap-head cs-cap-row">
+              <Kicker n="08">Navigation</Kicker>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Every step in</span></span><span className="ln"><span><em>has a step out.</em></span></span></h2>
+            </div>
+            <Route />
+            <div className="cs-page-mini">
+              <figure className="cs-browser">
+                <div className="cs-browser-bar mono"><i /><i /><i /><span>strata-residences-mu.vercel.app</span></div>
+                <div className="cs-browser-view"><Film name="d-page" restart label="Recording: scrolling the full page" /></div>
+              </figure>
+              <div className="cs-page-cap">
+                <p className="mono cs-note">Below the building</p>
+                <p className="serif">A calm page for everything a buyer reads twice.</p>
+                <ul className="mono">{PAGE.map((x) => <li key={x}>{x}</li>)}</ul>
               </div>
-              <p className="cs-p cs-rise">Seven plans drawn in code — walls, terraces, dimensions, a north point, a five-metre scale. This is the production component: choose a level, then select a highlighted room.</p>
             </div>
-            <PlanStudio />
           </div>
         </section>
 
-        {/* 09 — the full site */}
-        <section className="cs-sec cs-page" data-chapter="09 — The full site">
-          <div className="cs-wrap cs-page-grid">
-            <div>
-              <Kicker n="09">Beyond the stage</Kicker>
-              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Below the building,</span></span><span className="ln"><span><em>a calm page.</em></span></span></h2>
-              <ol className="cs-page-list">
-                {PAGE.map(([a, b], i) => <li key={a} className="cs-rise"><span className="mono">{String(i + 2).padStart(2, '0')}</span><b className="serif">{a}</b><p>{b}</p></li>)}
-              </ol>
-            </div>
-            <figure className="cs-browser cs-rise">
-              <div className="cs-browser-bar mono"><i /><i /><i /><span>strata-residences-mu.vercel.app</span></div>
-              <div className="cs-browser-view"><Film name="d-page" label="Recording: scrolling the full page" /></div>
-            </figure>
-          </div>
-        </section>
-
-        {/* 10 — responsive */}
-        <section className="cs-resp cs-dark" data-chapter="10 — Responsive">
+        {/* 09 — responsive */}
+        <section className="cs-resp cs-dark" data-chapter="09 — Responsive">
           <div className="cs-resp-sticky">
             <div className="cs-wrap cs-resp-grid">
               <div className="cs-resp-text">
-                <Kicker n="10">Responsive</Kicker>
+                <Kicker n="09">Responsive</Kicker>
                 <h2 className="serif cs-h-s">The same walk,<br /><em>in every hand.</em></h2>
                 <ol className="cs-resp-list">
                   {DEVICES.map((x, i) => (
@@ -482,8 +412,8 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 11 — final view */}
-        <section className="cs-final cs-dark" data-chapter="11 — Final view">
+        {/* 10 — final view */}
+        <section className="cs-final cs-dark" data-chapter="10 — Final view">
           <div className="cs-final-sticky">
             <img className="cs-final-img" alt="STRATA at dusk on the Ķīpsala riverbank" src={img('hero', 2688)} srcSet={`${img('hero', 1400)} 1400w, ${img('hero', 2688)} 2688w`} sizes="100vw" loading="lazy" />
             <div className="cs-final-shade" />

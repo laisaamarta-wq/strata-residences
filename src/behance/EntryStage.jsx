@@ -99,14 +99,10 @@ export default function EntryStage({ lenis }) {
     const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1500))
     idle(() => d.preloadAllFacades())
 
-    // the production entrance: the world resolves out of a soft blur
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!reduce) {
-      gsap.fromTo(tilt.current, { opacity: 0, scale: 1.06, filter: 'blur(10px)' },
-        { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 2.2, ease: 'power3.out', delay: 0.35, transformOrigin: '60% 60%', clearProps: 'filter' })
-      gsap.fromTo('.cs-hero-title .ch', { yPercent: 105 }, { yPercent: 0, duration: 1.5, ease: 'power4.out', stagger: 0.06, delay: 0.15 })
-      gsap.fromTo('.cs-hero .fx', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 1.4, ease: 'power3.out', stagger: 0.12, delay: 0.9 })
-    }
+    // the caption rises as the stage arrives on screen
+    const intro = gsap.fromTo(box.current.querySelectorAll('.cs-hero .fx'), { opacity: 0, y: 22 },
+      { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', stagger: 0.1,
+        scrollTrigger: { trigger: box.current, start: 'top 70%' } })
 
     const st = ScrollTrigger.create({
       trigger: box.current, start: 'top top', end: () => `+=${window.innerHeight * 4.5}`,
@@ -121,7 +117,7 @@ export default function EntryStage({ lenis }) {
       build(floorRef.current)
     }
     window.addEventListener('resize', onR)
-    return () => { st.kill(); window.removeEventListener('resize', onR); TL.current?.kill() }
+    return () => { st.kill(); intro.scrollTrigger?.kill(); intro.kill(); window.removeEventListener('resize', onR); TL.current?.kill() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -166,7 +162,7 @@ export default function EntryStage({ lenis }) {
   const hv = hover >= 0 ? FLOORS[hover] : null
 
   return (
-    <div className="cs-entry" ref={box} data-chapter="00 — Arrival" data-theme="dark">
+    <div className="cs-entry" ref={box} data-chapter="02 — Spatial entry" data-theme="dark">
       <section ref={stage}
         className={`stage cs-stage ${phase === 'overview' ? 'mode-overview' : ''} ${step >= 3 ? 'ui-floor' : ''} ${hover >= 0 ? 'has-hover' : ''} is-${phase}`}
         onPointerMove={onMove} onPointerLeave={() => setHover(-1)} onClick={onClick}
@@ -218,13 +214,10 @@ export default function EntryStage({ lenis }) {
         <div className="scrim" />
         <div className="grain" />
 
-        {/* ---- opening titles ---- */}
+        {/* ---- chapter caption ---- */}
         <div className="cs-hero">
-          <p className="mono fx cs-hero-k"><span>Case study</span><span>Residential digital experience</span></p>
-          <h1 className="cs-hero-title" aria-label="STRATA">
-            {'STRATA'.split('').map((c, i) => <span className="cl" key={i}><span className="ch">{c}</span></span>)}
-          </h1>
-          <p className="mono fx cs-hero-sub"><span>Residences</span><span>Ķīpsala, Riga</span></p>
+          <p className="mono fx cs-hero-k"><span>02</span><span>Spatial entry</span></p>
+          <p className="serif fx cs-hero-st">Scroll to walk in.<br /><em>The camera here is the one on the site.</em></p>
         </div>
         <div className="cs-cue mono">
           <span className="cs-cue-line" />
