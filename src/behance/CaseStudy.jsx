@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import Lenis from 'lenis'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -8,17 +8,26 @@ import BuildingIndex from './BuildingIndex.jsx'
 import PlanStudio from './PlanStudio.jsx'
 import Film from './Film.jsx'
 import Route from './Route.jsx'
+import Opening from './Opening.jsx'
+import Concept from './Concept.jsx'
 
 gsap.registerPlugin(ScrollTrigger)
 
 const LIVE = 'https://strata-residences-mu.vercel.app/'
 
+// what Marta did on the project
+const ROLE = ['Creative direction', 'UX / UI design', 'Interaction design', 'Motion direction', 'Front-end development', 'AI imagery art direction']
 const FACTS = [
-  ['Concept', 'Seven floors, seven hours'],
-  ['Role', 'Art direction · UX/UI · Motion · Front-end'],
-  ['Stack', 'React · GSAP · Lenis · Vite'],
+  ['Project', 'Self-initiated concept · 2026'],
+  ['Stack', 'React · GSAP · Lenis · Vite · Vercel'],
   ['Imagery', 'AI-generated with Higgsfield, art-directed'],
 ]
+const CONTACT = {
+  email: 'laisaa.marta@gmail.com',
+  phone: '+371 28 203 044',
+  tel: '+37128203044',
+  linkedin: 'https://www.linkedin.com/in/marta-jakovleva-1a2b65142',
+}
 
 const MOVES = [
   { name: 'Enter', film: 'd-enter', spec: 'Building → floor', t: '3.5 s · four phases', d: 'Slices part, a matched cut, a push through the glass.' },
@@ -57,8 +66,6 @@ const DEVICES = [
   { k: 'Mobile', d: 'Thumb-zone controls, swipe to step out.' },
 ]
 
-// the opening film: production camera, Level 04, 30 fps — STRATA appears once the room opens
-const COVER_REVEAL = [7.0, 9.75]
 
 const Words = ({ text, className }) => (
   <span className={className}>{text.split(' ').map((w, i) => <span className="w" key={i}>{w} </span>)}</span>
@@ -70,6 +77,7 @@ export default function CaseStudy() {
   const root = useRef(null)
   const [lenis, setLenis] = useState(null)
   const [chapter, setChapter] = useState('00 — Arrival')
+  const mail = `mailto:${CONTACT.email}?subject=${encodeURIComponent('Project enquiry — via the STRATA case study')}`
   const [hour, setHour] = useState(0)
   const [mat, setMat] = useState(0)
   const [dev, setDev] = useState(0)
@@ -100,13 +108,19 @@ export default function CaseStudy() {
           scrollTrigger: { trigger: el, start: 'top 82%', end: 'bottom 52%', scrub: true } })
       })
 
-      // strata: media opens like a floor slab — from a thin horizontal band
+      // light: each hour opens like a floor slab — from a thin horizontal band
       gsap.utils.toArray('.cs-slab').forEach((el) => {
-        const inner = el.querySelector('img, video, .cs-bld-world')
-        const tl = gsap.timeline({ scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 38%', scrub: 0.6 } })
-        tl.fromTo(el, { clipPath: 'inset(44% 0% 44% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.inOut' }, 0)
-        if (inner && !el.matches('.cs-bld, .cs-hour-img')) tl.fromTo(inner, { scale: 1.22 }, { scale: 1, ease: 'power2.out' }, 0)
+        gsap.fromTo(el, { clipPath: 'inset(44% 0% 44% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', ease: 'power2.inOut',
+          scrollTrigger: { trigger: el, start: 'top 92%', end: 'top 40%', scrub: 0.6 } })
       })
+      // architecture: the building rises out of the ground line, then settles
+      gsap.fromTo('.cs-bld', { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', ease: 'power3.inOut',
+        scrollTrigger: { trigger: '.cs-arch', start: 'top 70%', end: 'top 5%', scrub: 0.7 } })
+      gsap.fromTo('.cs-bld-world', { yPercent: 6 }, { yPercent: 0, ease: 'power2.out',
+        scrollTrigger: { trigger: '.cs-arch', start: 'top 70%', end: 'top 5%', scrub: 0.7 } })
+      // the role reads as a column of lines, one after another
+      gsap.fromTo('.cs-role li', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1, stagger: 0.07, ease: 'power3.out',
+        scrollTrigger: { trigger: '.cs-role', start: 'top 82%' } })
 
       // quiet rises for text blocks
       gsap.utils.toArray('.cs-rise').forEach((el) => {
@@ -121,11 +135,12 @@ export default function CaseStudy() {
       const mm = gsap.matchMedia()
       mm.add('(min-width: 900px)', () => {
         // motion: a horizontal strip of real recordings, moved by vertical scroll
+        // the heading holds the frame first, then the recordings travel in from the right:
+        // a slow start and a soft stop, like a camera on a track
         const track = document.querySelector('.cs-strip-track')
-        gsap.to(track, {
-          x: () => -(track.scrollWidth - window.innerWidth), ease: 'none',
-          scrollTrigger: { trigger: '.cs-strip', start: 'top top', end: 'bottom bottom', scrub: 0.8, invalidateOnRefresh: true },
-        })
+        gsap.timeline({ scrollTrigger: { trigger: '.cs-strip', start: 'top top', end: 'bottom bottom', scrub: 1, invalidateOnRefresh: true } })
+          .to({}, { duration: 0.14 })
+          .to(track, { x: () => -(track.scrollWidth - window.innerWidth), ease: 'power1.inOut', duration: 1 })
         gsap.to('.cs-strip-bar i', { scaleX: 1, ease: 'none', transformOrigin: '0 50%',
           scrollTrigger: { trigger: '.cs-strip', start: 'top top', end: 'bottom bottom', scrub: true } })
       })
@@ -154,11 +169,14 @@ export default function CaseStudy() {
           onUpdate: (s) => setDev(Math.min(2, Math.floor(s.progress * 3 * 0.999))) })
       })
 
-      // final: pull back from the penthouse to the whole building
+      // final: the camera pulls back from the penthouse to the whole building — the entry, reversed
       gsap.fromTo('.cs-final-img', { scale: 2.5 }, { scale: 1, ease: 'power2.out',
-        scrollTrigger: { trigger: '.cs-final', start: 'top top', end: 'bottom bottom', scrub: 0.8 } })
+        scrollTrigger: { trigger: '.cs-final', start: 'top top', end: 'bottom bottom', scrub: 1 } })
       gsap.fromTo('.cs-final-in > *', { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.12, ease: 'power3.out',
         scrollTrigger: { trigger: '.cs-final', start: '55% bottom', end: 'bottom bottom', scrub: 0.5 } })
+      // contact: the rows draw their rules left to right
+      gsap.fromTo('.cs-ct-row', { '--rule': 0 }, { '--rule': 1, duration: 1.2, stagger: 0.1, ease: 'power3.inOut',
+        scrollTrigger: { trigger: '.cs-ct-rows', start: 'top 85%' } })
     }, root)
     return () => ctx.revert()
   }, [])
@@ -171,8 +189,6 @@ export default function CaseStudy() {
   }, [])
 
   const h = FLOORS[HOURS[hour].f]
-  const [reveal, setReveal] = useState(false)
-  const onCoverTime = useCallback((t) => setReveal(t > COVER_REVEAL[0] && t < COVER_REVEAL[1]), [])
 
   return (
     <div className="cs" ref={root}>
@@ -183,27 +199,27 @@ export default function CaseStudy() {
       </header>
 
       <main id="top">
-        {/* 00 — the opening: the production camera walks into Level 04 on its own */}
-        <section className="cs-cover" data-chapter="00 — Arrival">
-          <Film name="cover" eager restart className="cs-cover-film" onTime={onCoverTime}
-            label="The production camera moves from the building at dusk into a residence on level 04" />
-          <div className="cs-cover-shade" />
-          <p className="mono cs-cover-k"><span>Case study</span><span>Residential digital experience</span></p>
-          <div className={`cs-cover-title ${reveal ? 'on' : ''}`}>
-            <h1 className="wordmark">STRATA</h1>
-            <p className="mono">Residences <span /> Ķīpsala, Riga</p>
-          </div>
-          <p className="mono cs-cover-tag">Production camera · Level 04 · 19:10</p>
-          <div className="cs-cover-cue mono"><span className="cs-cue-line" />Scroll</div>
-        </section>
+        {/* 00 — opening: the building is laid down in strata while the camera approaches */}
+        <Opening />
 
-        {/* 01 — a short introduction */}
-        <section className="cs-sec cs-intro" data-chapter="01 — The residence">
+        {/* 01 — STRATA: the idea and the role; slides up over the opening */}
+        <section className="cs-sec cs-intro cs-over" data-chapter="01 — STRATA">
           <div className="cs-wrap">
-            <Kicker n="01">The residence</Kicker>
+            <Kicker n="01">STRATA</Kicker>
             <h2 className="serif cs-lead">
-              <Words className="cs-read" text="A seven-level residence on the Ķīpsala riverbank — and a website you enter the way you enter the building." />
+              <Words className="cs-read" text="A seven-level residence on the Ķīpsala riverbank, translated into an immersive digital experience." />
             </h2>
+            <div className="cs-intro-grid">
+              <p className="cs-intro-p cs-rise">
+                STRATA is not a gallery of renders. The whole site is built around one idea — moving through architecture.
+                Visitors approach the building, choose a level and walk in: the camera travels to the floor, cuts to its facade
+                and passes through the glass into the residence, where rooms, plans and details unfold without a single page change.
+              </p>
+              <div className="cs-role">
+                <p className="mono cs-role-k">Role</p>
+                <ol>{ROLE.map((r, i) => <li key={r}><span className="mono">{String(i + 1).padStart(2, '0')}</span><span className="serif">{r}</span></li>)}</ol>
+              </div>
+            </div>
             <dl className="cs-facts cs-rise">
               {FACTS.map(([k, v]) => <div key={k}><dt className="mono">{k}</dt><dd>{v}</dd></div>)}
               <div><dt className="mono">Live</dt><dd><a href={LIVE} target="_blank" rel="noopener noreferrer">strata-residences-mu.vercel.app ↗</a></dd></div>
@@ -211,20 +227,21 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 02 — spatial entry: the production stage, scrubbed by scroll */}
+        {/* 02 — concept: the journey, drawn as depth */}
+        <Concept />
+
+        {/* 03 — spatial entry: the production stage, scrubbed by scroll — the first scene of the real product */}
         <EntryStage lenis={lenis} />
 
-        {/* 03 — motion */}
-        <section className="cs-sec cs-dark cs-motion cs-over" data-chapter="03 — Motion">
-          <div className="cs-wrap cs-cap-head">
-            <Kicker n="03">Motion</Kicker>
-            <h2 className="serif cs-h cs-lines"><span className="ln"><span>One camera,</span></span><span className="ln"><span><em>six moves.</em></span></span></h2>
-            <p className="mono cs-note cs-rise">Every transition is a camera move inside one space — never a page change.</p>
-          </div>
-        </section>
-        <section className="cs-strip cs-dark" data-chapter="03 — Motion" style={{ '--n': MOVES.length }}>
+        {/* 04 — motion: the idea and its demonstration in one horizontal take */}
+        <section className="cs-strip cs-dark cs-over" data-chapter="04 — Motion" style={{ '--n': MOVES.length }}>
           <div className="cs-strip-sticky">
             <div className="cs-strip-track">
+              <div className="cs-move-head">
+                <Kicker n="04">Motion</Kicker>
+                <h2 className="serif cs-h"><span>One camera,</span><br /><em>six moves.</em></h2>
+                <p className="mono cs-note">Every transition is a camera move inside one space — never a page change.</p>
+              </div>
               {MOVES.map((m, i) => (
                 <article className="cs-move" key={m.name}>
                   <div className="cs-move-film"><Film name={m.film} restart label={`Recording: ${m.name}`} /></div>
@@ -240,35 +257,11 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 04 — architecture: the building as an index */}
-        <section className="cs-sec cs-dark cs-arch" data-chapter="04 — Architecture">
-          <div className="cs-wrap">
-            <div className="cs-cap-head">
-              <Kicker n="04">Architecture</Kicker>
-              <h2 className="serif cs-h cs-lines"><span className="ln"><span>Seven levels,</span></span><span className="ln"><span><em>seven hours.</em></span></span></h2>
-              <p className="mono cs-note cs-rise">The facade is the menu — each slab a hit area drawn on the photograph.</p>
-            </div>
-            <BuildingIndex />
-          </div>
-        </section>
-
-        {/* 05 — interaction: plan and room */}
-        <section className="cs-sec cs-plan-sec cs-dark2" data-chapter="05 — Interaction">
-          <div className="cs-wrap">
-            <div className="cs-cap-head">
-              <Kicker n="05">Interaction</Kicker>
-              <h2 className="serif cs-h cs-lines"><span className="ln"><span>The drawing</span></span><span className="ln"><span><em>and the room.</em></span></span></h2>
-              <p className="mono cs-note cs-rise">Choose a level · select a highlighted room</p>
-            </div>
-            <PlanStudio />
-          </div>
-        </section>
-
-        {/* 06 — detail: light, material, visual system */}
-        <section className="cs-sec cs-light" data-chapter="06 — Detail">
+        {/* 05 — light: a different hour on every floor (parallax) */}
+        <section className="cs-sec cs-light" data-chapter="05 — Light">
           <div className="cs-wrap cs-light-grid">
             <div className="cs-light-sticky">
-              <Kicker n="06">Light</Kicker>
+              <Kicker n="05">Light</Kicker>
               <h2 className="serif cs-h-s">A different hour<br /><em>on every floor.</em></h2>
               <div className="cs-clock" aria-live="polite">
                 <span className="serif cs-clock-t" key={h.id}>{h.hour}</span>
@@ -291,6 +284,7 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
+        {/* 06 — materiality: a slow zoom into the sample board */}
         <section className="cs-mat cs-dark" data-chapter="06 — Materiality">
           <div className="cs-mat-sticky">
             <img className="cs-mat-img" alt="Material board — basalt, travertine, bronze, oak, linen and birch" src={img('materials', 2400)} srcSet={srcset('materials')} sizes="100vw" loading="lazy" />
@@ -306,11 +300,24 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
-        <section className="cs-sec cs-art" data-chapter="06 — Visual system">
+        {/* 07 — architecture: the facade is the menu */}
+        <section className="cs-sec cs-dark cs-arch" data-chapter="07 — Architecture">
+          <div className="cs-wrap">
+            <div className="cs-cap-head">
+              <Kicker n="07">Architecture</Kicker>
+              <h2 className="serif cs-h cs-lines"><span className="ln"><span>The facade</span></span><span className="ln"><span><em>is the menu.</em></span></span></h2>
+              <p className="mono cs-note cs-rise">Seven slabs, seven hit areas drawn on the photograph.</p>
+            </div>
+            <BuildingIndex />
+          </div>
+        </section>
+
+        {/* 08 — visual system: palette columns grow in like strata */}
+        <section className="cs-sec cs-art" data-chapter="08 — Visual system">
           <div className="cs-wrap">
             <div className="cs-cap-head cs-cap-row">
-              <Kicker n="06">Visual system</Kicker>
-              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Four materials,</span></span><span className="ln"><span><em>one hour, per level.</em></span></span></h2>
+              <Kicker n="08">Visual system</Kicker>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>A palette</span></span><span className="ln"><span><em>for every level.</em></span></span></h2>
             </div>
             <div className="cs-pal">
               {FLOORS.map((f) => (
@@ -345,15 +352,27 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
+        {/* 09 — interaction: the drawing and the room */}
+        <section className="cs-sec cs-plan-sec cs-dark2" data-chapter="09 — Interaction">
+          <div className="cs-wrap">
+            <div className="cs-cap-head">
+              <Kicker n="09">Interaction</Kicker>
+              <h2 className="serif cs-h cs-lines"><span className="ln"><span>The drawing</span></span><span className="ln"><span><em>and the room.</em></span></span></h2>
+              <p className="mono cs-note cs-rise">Choose a level · select a highlighted room</p>
+            </div>
+            <PlanStudio />
+          </div>
+        </section>
 
-        {/* 07 — interface, in motion */}
-        <section className="cs-sec cs-ui" data-chapter="07 — Interface">
+        {/* 10 — interface & navigation: a route through the building, then its controls up close */}
+        <section className="cs-sec cs-nav" data-chapter="10 — Interface & navigation">
           <div className="cs-wrap">
             <div className="cs-cap-head cs-cap-row">
-              <Kicker n="07">Interface</Kicker>
-              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Orientation,</span></span><span className="ln"><span><em>always in view.</em></span></span></h2>
-              <p className="mono cs-note cs-rise">Live close-ups, cropped from the recordings</p>
+              <Kicker n="10">Interface &amp; navigation</Kicker>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Every step in</span></span><span className="ln"><span><em>has a step out.</em></span></span></h2>
             </div>
+            <Route />
+            <p className="mono cs-crops-k"><span>Orientation, always in view</span><span>Live close-ups, cropped from the recordings</span></p>
             <div className="cs-crops">
               {CROPS.map((x, i) => (
                 <figure className={`cs-crop cs-crop-${i}`} key={x.k}>
@@ -365,17 +384,6 @@ export default function CaseStudy() {
                 </figure>
               ))}
             </div>
-          </div>
-        </section>
-
-        {/* 08 — navigation: a route through the building */}
-        <section className="cs-sec cs-nav" data-chapter="08 — Navigation">
-          <div className="cs-wrap">
-            <div className="cs-cap-head cs-cap-row">
-              <Kicker n="08">Navigation</Kicker>
-              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Every step in</span></span><span className="ln"><span><em>has a step out.</em></span></span></h2>
-            </div>
-            <Route />
             <div className="cs-page-mini">
               <figure className="cs-browser">
                 <div className="cs-browser-bar mono"><i /><i /><i /><span>strata-residences-mu.vercel.app</span></div>
@@ -390,12 +398,12 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 09 — responsive */}
-        <section className="cs-resp cs-dark" data-chapter="09 — Responsive">
+        {/* 11 — responsive */}
+        <section className="cs-resp cs-dark" data-chapter="11 — Responsive">
           <div className="cs-resp-sticky">
             <div className="cs-wrap cs-resp-grid">
               <div className="cs-resp-text">
-                <Kicker n="09">Responsive</Kicker>
+                <Kicker n="11">Responsive</Kicker>
                 <h2 className="serif cs-h-s">The same walk,<br /><em>in every hand.</em></h2>
                 <ol className="cs-resp-list">
                   {DEVICES.map((x, i) => (
@@ -412,22 +420,40 @@ export default function CaseStudy() {
           </div>
         </section>
 
-        {/* 10 — final view */}
-        <section className="cs-final cs-dark" data-chapter="10 — Final view">
+        {/* 12 — final: the camera pulls back to the whole building */}
+        <section className="cs-final cs-dark" data-chapter="12 — Final view">
           <div className="cs-final-sticky">
             <img className="cs-final-img" alt="STRATA at dusk on the Ķīpsala riverbank" src={img('hero', 2688)} srcSet={`${img('hero', 1400)} 1400w, ${img('hero', 2688)} 2688w`} sizes="100vw" loading="lazy" />
             <div className="cs-final-shade" />
             <div className="cs-final-in">
               <p className="wordmark cs-final-mark">STRATA</p>
-              <p className="serif cs-final-t">Residential digital experience</p>
-              <p className="mono cs-final-p">Riga, Latvia</p>
+              <p className="serif cs-final-t">A digital experience shaped around<br /><em>movement, space and architecture.</em></p>
               <a className="cs-cta mono" href={LIVE} target="_blank" rel="noopener noreferrer">View live experience <span aria-hidden="true">→</span></a>
-              <p className="mono cs-final-url">strata-residences-mu.vercel.app</p>
+            </div>
+          </div>
+        </section>
+
+        {/* contact */}
+        <section className="cs-ct cs-dark" data-chapter="Contact">
+          <div className="cs-wrap">
+            <p className="cs-k mono"><span>—</span><span>Let’s work together</span></p>
+            <h2 className="serif cs-ct-h">Interested in<br /><em>working together?</em></h2>
+            <div className="cs-ct-grid">
+              <ul className="cs-ct-rows">
+                <li><a className="cs-ct-row" href={`mailto:${CONTACT.email}`}><span className="mono">Email</span><span className="cs-ct-v">{CONTACT.email}</span><span className="cs-ct-a" aria-hidden="true">→</span></a></li>
+                <li><a className="cs-ct-row" href={`tel:${CONTACT.tel}`}><span className="mono">Phone · WhatsApp</span><span className="cs-ct-v">{CONTACT.phone}</span><span className="cs-ct-a" aria-hidden="true">→</span></a></li>
+                <li><a className="cs-ct-row" href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer"><span className="mono">LinkedIn</span><span className="cs-ct-v">Marta Jakovleva</span><span className="cs-ct-a" aria-hidden="true">↗</span></a></li>
+                <li><a className="cs-ct-row" href={LIVE} target="_blank" rel="noopener noreferrer"><span className="mono">Live experience</span><span className="cs-ct-v">strata-residences-mu.vercel.app</span><span className="cs-ct-a" aria-hidden="true">↗</span></a></li>
+              </ul>
+              <div className="cs-ct-side">
+                <p>Marta Jakovleva — UX/UI and digital experience designer, Riga. Open to freelance projects and creative collaborations.</p>
+                <a className="cs-cta cs-ct-cta mono" href={mail}>Let’s talk <span aria-hidden="true">→</span></a>
+              </div>
             </div>
           </div>
         </section>
         <footer className="cs-credits mono">
-          <span>Design, art direction, motion & front-end — Marta Jakovleva</span>
+          <span>Creative direction, UX/UI, interaction, motion &amp; front-end — Marta Jakovleva</span>
           <span>Imagery — AI-generated with Higgsfield, art-directed</span>
           <span>React · GSAP · Lenis · Vite · Vercel</span>
           <span>Concept project — the building, names and prices are fictional</span>

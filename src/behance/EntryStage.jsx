@@ -162,7 +162,7 @@ export default function EntryStage({ lenis }) {
   const hv = hover >= 0 ? FLOORS[hover] : null
 
   return (
-    <div className="cs-entry" ref={box} data-chapter="02 — Spatial entry" data-theme="dark">
+    <div className="cs-entry cs-over" ref={box} data-chapter="03 — Spatial entry" data-theme="dark">
       <section ref={stage}
         className={`stage cs-stage ${phase === 'overview' ? 'mode-overview' : ''} ${step >= 3 ? 'ui-floor' : ''} ${hover >= 0 ? 'has-hover' : ''} is-${phase}`}
         onPointerMove={onMove} onPointerLeave={() => setHover(-1)} onClick={onClick}
@@ -216,7 +216,7 @@ export default function EntryStage({ lenis }) {
 
         {/* ---- chapter caption ---- */}
         <div className="cs-hero">
-          <p className="mono fx cs-hero-k"><span>02</span><span>Spatial entry</span></p>
+          <p className="mono fx cs-hero-k"><span>03</span><span>Spatial entry</span></p>
           <p className="serif fx cs-hero-st">Scroll to walk in.<br /><em>The camera here is the one on the site.</em></p>
         </div>
         <div className="cs-cue mono">
