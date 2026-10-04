@@ -588,18 +588,31 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
   .plan-layer { padding: calc(var(--hdr) + 60px) var(--gutter) 140px; align-items: center; }
   .plan-cap { flex-wrap: wrap; gap: 8px 16px; }
   .plan-svg { max-height: 56vh; }
-  :root { --dw: 100vw; }
-  .details { border-left: 0; }
-  .details-in { padding: calc(var(--hdr) + 22px) 22px 96px; }
+  /* Details on mobile follows the desktop composition: the room stays in view and the
+     ivory layer sits beside it, separated by one hairline. On a portrait screen
+     "beside" means below — the layer slides up from the bottom edge (the same
+     clip-path wipe as the desktop's right edge) and covers the lower part only,
+     instead of a full-screen ivory wall over the photograph. */
+  :root { --dw: 100vw; --dsh: 60%; }
+  .details { top: auto; height: var(--dsh); border-left: 0; border-top: 1px solid rgba(238, 233, 224, .22);
+    clip-path: inset(100% 0 0 0); }
+  .view-details.ui-floor .details { clip-path: inset(0 0 0 0); }
+  /* no header above the sheet any more: the paper band becomes a short fade at its top edge */
+  .details::after { right: 0; height: 22px; background: linear-gradient(180deg, var(--paper), rgba(243, 240, 234, 0)); }
+  .details-in { padding: 26px 22px calc(40px + env(safe-area-inset-bottom, 0px)); }
+  .d-top { margin-bottom: 14px; }
+  .details h3 { font-size: 38px; margin-bottom: 14px; }
+  .d-intro { font-size: 15px; margin-bottom: 26px; }
   .d-key dd { font-size: 28px; }
   .d-key > div + div { padding-left: 12px; }
-  /* on the ivory sheet the switcher and header switch to ink — no dark pill on paper */
-  .view-details.ui-floor .views { transform: translateX(-50%); bottom: 18px; background: rgba(243, 240, 234, .92); border-color: rgba(18, 17, 16, .12); text-shadow: none;
-    -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .view-details .views button { color: rgba(18, 17, 16, .6); }
-  .view-details .views button.on { color: var(--paper); }
-  .view-details .views-ink { background: var(--ink); }
-  .details-open { color: var(--ink); }
+  /* the photograph re-frames into the open band above the sheet, moving with the wipe */
+  .layer.interiors { transition: transform .65s var(--ease); }
+  .view-details.ui-floor .layer.interiors { transform: translateY(calc(var(--dsh) * -0.42)); }
+  /* the level heading would crowd the band; the sheet's kicker and title carry it */
+  .view-details .floor-ui .floor-head { opacity: 0 !important; transform: translateY(-10px) !important; pointer-events: none; }
+  /* the switcher stays a dark pill on the photograph, just above the sheet — as on desktop */
+  .views { transition: opacity .9s var(--ease), transform 1.1s var(--ease), filter .9s var(--ease), bottom .5s var(--ease-out); }
+  .view-details.ui-floor .views { transform: translateX(-50%); bottom: calc(var(--dsh) + 16px); }
   .view-plan .floor-ui .floor-head { opacity: 0 !important; }
   .passing { font-size: 64vw; }
 

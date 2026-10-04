@@ -1,6 +1,6 @@
 import gsap from 'gsap'
 import { FLOORS } from '../data.js'
-import { baseLayout, floorCam, zoomAbout, facadeMatchScale, isMobile } from './camera.js'
+import { baseLayout, pushCam, floorCam, zoomAbout, facadeMatchScale, isMobile } from './camera.js'
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -17,7 +17,9 @@ export class Director {
     this.zone = 0
     this.tl = null
     this.queue = null
+    this.scroll = 0 // the stage's own scroll progress, 0…1 (drives the mobile approach)
     this.layout()
+    this._vw = this.vw; this._vh = this.vh
     gsap.set(this.els.world, { transformOrigin: '0 0', ...this.camProps(this.L) })
     gsap.set([...els.facades, ...els.interiors, els.plate, els.flash], { opacity: 0 })
     gsap.set(els.slices, { opacity: 0 })
@@ -29,19 +31,51 @@ export class Director {
   }
 
   get vw() { return window.innerWidth }
-  get vh() { return window.innerHeight }
+  // The camera frames the stage, not the window. On phones the window height changes
+  // whenever the browser chrome (address bar, toolbar) shows or hides; the stage is
+  // sized in small-viewport units and keeps its height, so the camera does too.
+  get vh() { return this.els.stage ? this.els.stage.clientHeight : window.innerHeight }
 
   camProps(c) { return { x: c.x, y: c.y, scale: c.s } }
 
+  // Bottom of the hero copy in stage coordinates, from layout offsets: independent of
+  // the page's scroll position and of the copy's entrance transform (fadeUp).
+  heroBottom() {
+    const c = typeof document !== 'undefined' && document.querySelector('.hero-copy')
+    if (!c || !this.els.stage) return 0
+    let y = c.offsetHeight
+    for (let el = c; el && el !== this.els.stage; el = el.offsetParent) y += el.offsetTop
+    return y + 18
+  }
+
   layout() {
-    this.L = baseLayout(this.vw, this.vh)
+    this.L = baseLayout(this.vw, this.vh, this.heroBottom())
     return this.L
   }
 
+  get mobile() { return isMobile(this.vw, this.vh) }
+
+  // The overview camera for the current scroll position: on mobile the resting
+  // layout pushed in along the scroll; on desktop simply the resting layout.
+  cam() { return this.mobile ? pushCam(this.L, this.scroll, this.vh) : this.L }
+
+  setScroll(p) {
+    p = Math.min(1, Math.max(0, p))
+    if (p === this.scroll) return
+    this.scroll = p
+    if (this.mode === 'overview' && this.mobile) gsap.set(this.els.world, this.camProps(this.cam()))
+  }
+
   resize() {
+    const prev = this.L, vw = this.vw, vh = this.vh
     this.layout()
+    const same = prev && this._vw === vw && this._vh === vh &&
+      Math.abs(prev.s - this.L.s) < 1e-6 && Math.abs(prev.x - this.L.x) < 0.01 && Math.abs(prev.y - this.L.y) < 0.01
+    this._vw = vw; this._vh = vh
+    // browser-chrome resizes leave the stage untouched: nothing to re-frame
+    if (same) return
     if (this.mode === 'overview') {
-      gsap.set(this.els.world, this.camProps(this.L))
+      gsap.set(this.els.world, this.camProps(this.cam()))
     } else if (this.mode === 'floor' && this.active >= 0) {
       // rebuild the timeline for the new viewport, parked at its end
       this.tl?.kill()
@@ -96,11 +130,11 @@ export class Director {
     const { world, master, plate, slices, facades, interiors, flash } = this.els
     const vw = this.vw, vh = this.vh
     const fl = FLOORS[i]
-    const L = this.L
+    const L = this.cam() // starts exactly where the overview camera is
     const C1 = floorCam(fl.slice, vw, vh)
     const m = facadeMatchScale(fl.slice, C1, vw, vh)
     const C2 = zoomAbout(C1, 1 / m, vw, vh)
-    const mobile = isMobile(vw)
+    const mobile = isMobile(vw, vh)
 
     const tl = gsap.timeline({ paused: true, defaults: { overwrite: false, lazy: false } })
 
@@ -172,7 +206,7 @@ export class Director {
       this.active = -1
       gsap.set(this.els.slices, { opacity: 0 })
       gsap.set(this.els.master, { opacity: 1 })
-      gsap.set(this.els.world, { opacity: 1, ...this.camProps(this.L) })
+      gsap.set(this.els.world, { opacity: 1, ...this.camProps(this.cam()) })
       gsap.set(this.els.plate, { opacity: 0 })
       this.finish()
     })

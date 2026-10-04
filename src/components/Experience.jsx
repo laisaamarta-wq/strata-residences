@@ -50,7 +50,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   // ---- boot the director ----
   useLayoutEffect(() => {
     const d = new Director({
-      world: worldRef.current, master: masterRef.current, plate: plateRef.current,
+      stage: stageRef.current, world: worldRef.current, master: masterRef.current, plate: plateRef.current,
       flash: flashRef.current, slices: sliceRefs.current, facades: facadeRefs.current, interiors: interiorRefs.current,
     }, onState)
     dir.current = d
@@ -67,6 +67,31 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
       { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 2.2, ease: 'power3.out', delay: 0.1, transformOrigin: '60% 60%' })
     return () => window.removeEventListener('resize', onR)
   }, [onState, directorRef])
+
+  // ---- mobile approach: the camera is a function of the stage's scroll ----
+  // Read once per frame, after the browser has applied the scroll (native touch
+  // scrolling and momentum on phones, Lenis on desktop). Progress is measured
+  // against the stage's own, stable height — never the window, whose height
+  // changes with the browser chrome. At scrollY 0 the progress is exactly 0, so the
+  // first frame of the approach is the resting frame.
+  useEffect(() => {
+    const stage = stageRef.current
+    let last = -1, scrolled = false
+    const tick = () => {
+      const D = dir.current
+      if (!D) return
+      const y = window.scrollY
+      if (y === last) return
+      last = y
+      D.setScroll(y / stage.clientHeight)
+      // a scroll gesture dismisses the floor preview card
+      const s = y > 24
+      if (s !== scrolled) { scrolled = s; if (s) setPreview(-1) }
+    }
+    gsap.ticker.add(tick)
+    tick()
+    return () => gsap.ticker.remove(tick)
+  }, [])
 
   // ---- page scroll ----
   // The page always scrolls normally. Scrolling never selects or enters a floor:
@@ -162,7 +187,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
       const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
       if (D.mode === 'overview' && !REDUCED) { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
       if (D.mode !== 'overview') return
-      const p = toImage(D.L, sp.x, sp.y)
+      const p = toImage(D.cam(), sp.x, sp.y)
       const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
       setHover((h) => (h === i ? h : i))
       if (i >= 0) D.preloadFloor(i)
@@ -185,7 +210,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     if (D.mode !== 'overview') return
     if (e.target.closest('button, a, .ui-block')) return
     const sp = stagePoint(e)
-    const p = toImage(D.L, sp.x, sp.y)
+    const p = toImage(D.cam(), sp.x, sp.y) // the camera as it is on screen, approach included
     const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
     if (i < 0) { setPreview(-1); return }
     const pt = e.nativeEvent.pointerType

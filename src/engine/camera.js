@@ -3,14 +3,13 @@ import { MASTER, BUILDING_BOX } from '../data.js'
 export const isMobile = (vw, vh = window.innerHeight) => vw < 760 || (vw < 1100 && vw / vh < 0.9)
 
 // Resting camera: whole building, placed right-of-centre on desktop, lower-centre on mobile.
-export function baseLayout(vw, vh) {
+// vh is the stage height (stable), heroBottom the headline's bottom edge in stage coordinates.
+export function baseLayout(vw, vh, heroBottom = 0) {
   const B = BUILDING_BOX
   const mobile = isMobile(vw, vh)
   let s, cx, cy
   if (mobile) {
     // building sits in the band between the headline and the floor bar
-    const hero = typeof document !== 'undefined' && document.querySelector('.hero-copy')
-    const heroBottom = hero ? hero.getBoundingClientRect().bottom + 18 : 0
     const top = Math.max(vh * 0.43, heroBottom), bottom = vh - 92
     s = Math.min((vw * 0.86) / B.w, (bottom - top) / B.h)
     cx = vw / 2
@@ -27,6 +26,29 @@ export function baseLayout(vw, vh) {
   if (ty + MASTER.h * s < vh) ty = vh - MASTER.h * s
   if (!mobile && ty > 0) ty = 0
   return { s, x: tx, y: ty }
+}
+
+// Mobile approach: the camera physically moves toward the building as the visitor
+// scrolls the stage away. p is the stage's own scroll progress (0 = at rest,
+// 1 = scrolled out); the move is a pure function of p, so every scroll position
+// has exactly one camera and p = 0 is exactly the resting frame — no states to
+// switch between, nothing to catch up with.
+//  · push-in: scale grows around the building's centre, starting with a gentle but
+//    non-zero speed (so the first touch already reads as motion) and gaining depth;
+//  · parallax: the building travels up slower than the page, as a distant object would.
+export const PUSH = { zoom: 0.62, lead: 0.4, lag: 0.34 }
+export function pushCam(L, p, vh) {
+  if (p <= 0) return L
+  const B = BUILDING_BOX
+  const e = PUSH.lead * p + (1 - PUSH.lead) * p * p // 0 → 1, slope 0.4 at the start
+  const f = 1 + PUSH.zoom * e
+  const ox = L.x + (B.x + B.w / 2) * L.s
+  const oy = L.y + (B.y + B.h / 2) * L.s
+  return {
+    s: L.s * f,
+    x: ox - (ox - L.x) * f,
+    y: oy - (oy - L.y) * f + PUSH.lag * p * vh,
+  }
 }
 
 // Camera framing one floor slice in the centre of the screen.
