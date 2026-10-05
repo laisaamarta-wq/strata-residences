@@ -1,17 +1,19 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { FLOORS, MASTER, img, srcset } from '../data.js'
+import { useStepper, STEP_EASE } from '../engine/stepper.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /*
  * 03 — Architecture: read the building, layer by layer.
- * The Behind the Case logic brought to the site itself: one pinned frame, a camera that
- * moves over the real photograph as you scroll, and at every stop a question the
- * architecture answers. The layer in question lifts out of a darkened building (the same
- * slices that drive the stage), and a photograph opens beside it like a floor slab.
- * Scroll is the only control; the rail is a shortcut to any layer.
+ * The Behind the Case logic brought to the site itself: one held frame, a camera that
+ * moves over the real photograph, and at every stop a question the architecture answers.
+ * The layer in question lifts out of a darkened building (the same slices that drive the
+ * stage), and a photograph opens beside it like a floor slab.
+ * One gesture moves one layer, always at the same calm pace (engine/stepper.js);
+ * the rail is a shortcut to any layer.
  */
 
 const LAYERS = [
@@ -45,72 +47,46 @@ const LAYERS = [
     cam: { x: 820, y: 130, w: 1020, h: 440 }, hl: [6], ev: { im: 'ph-pool', c: 'The pavilion · blue hour' } },
 ]
 const N = LAYERS.length
-const STEP_VH = 72 // scroll per layer
-const MOVE = 0.45 // share of each layer's scroll spent moving the camera; the rest holds
 
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
-const ease = gsap.parseEase('power2.inOut')
 
 // camera that fits a focus rect (image px) inside a W × H frame, never showing past the photograph
 function fit(F, W, H) {
   const cover = Math.max(W / MASTER.w, H / MASTER.h)
   const s = Math.max(cover, Math.min(W / F.w, H / F.h) * 0.94)
-  return { s, cx: F.x + F.w / 2, cy: F.y + F.h / 2 }
-}
-function place(c, W, H) {
-  let x = W / 2 - c.cx * c.s
-  let y = H / 2 - c.cy * c.s
-  x = clamp(x, W - MASTER.w * c.s, 0)
-  y = clamp(y, H - MASTER.h * c.s, 0)
-  return { x, y, scale: c.s }
+  let x = W / 2 - (F.x + F.w / 2) * s
+  let y = H / 2 - (F.y + F.h / 2) * s
+  x = clamp(x, W - MASTER.w * s, 0)
+  y = clamp(y, H - MASTER.h * s, 0)
+  return { x, y, scale: s }
 }
 
 function Layers({ lenis }) {
   const root = useRef(null)
   const frame = useRef(null)
   const world = useRef(null)
-  const [at, setAt] = useState(0)
+  const [at, go] = useStepper(root, { count: N, lenis, hold: 1300 })
+  const first = useRef(true)
 
+  // one state, one camera move: fixed length, whatever the scroll speed
   useLayoutEffect(() => {
-    let W = 1, H = 1, C = []
-    const measure = () => {
+    const r = frame.current.getBoundingClientRect()
+    const c = fit(LAYERS[at].cam, r.width, r.height)
+    if (first.current) { first.current = false; gsap.set(world.current, c); return }
+    gsap.to(world.current, { ...c, duration: 1.5, ease: STEP_EASE, overwrite: true })
+  }, [at])
+  useEffect(() => {
+    const onR = () => {
       const r = frame.current.getBoundingClientRect()
-      W = r.width; H = r.height
-      C = LAYERS.map((l) => fit(l.cam, W, H))
+      gsap.set(world.current, fit(LAYERS[at].cam, r.width, r.height))
     }
-    let last = -1
-    const apply = (p) => {
-      const t = clamp(p, 0, 0.9999) * N
-      const k = Math.floor(t)
-      if (k !== last) { last = k; setAt(k) }
-      const b = k === 0 ? 1 : ease(clamp((t - k) / MOVE, 0, 1))
-      const A = C[Math.max(0, k - 1)], B = C[k]
-      const c = {
-        s: Math.exp(Math.log(A.s) + (Math.log(B.s) - Math.log(A.s)) * b),
-        cx: A.cx + (B.cx - A.cx) * b,
-        cy: A.cy + (B.cy - A.cy) * b,
-      }
-      gsap.set(world.current, place(c, W, H))
-    }
-    measure()
-    const st = ScrollTrigger.create({
-      trigger: root.current, start: 'top top', end: 'bottom bottom',
-      onUpdate: (s) => apply(s.progress),
-      onRefresh: (s) => { measure(); apply(s.progress) },
-    })
-    apply(0)
-    return () => st.kill()
-  }, [])
-
-  const go = (i) => {
-    const top = root.current.getBoundingClientRect().top + window.scrollY
-    const span = root.current.offsetHeight - window.innerHeight
-    lenis?.scrollTo(top + span * ((i + MOVE + 0.05) / N), { duration: 1.8 })
-  }
+    window.addEventListener('resize', onR)
+    return () => window.removeEventListener('resize', onR)
+  }, [at])
 
   const L = LAYERS[at]
   return (
-    <div className="rb" ref={root} style={{ height: `calc(${N * STEP_VH}vh + 100vh)` }}>
+    <div className="rb" ref={root}>
       <div className="rb-sticky">
         <div className="rb-text">
           <p className="mono rb-k"><span>Seven layers, seven decisions</span><span><b>{String(at + 1).padStart(2, '0')}</b> / {String(N).padStart(2, '0')}</span></p>

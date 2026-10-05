@@ -20,7 +20,6 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   const masterRef = useRef(null)
   const plateRef = useRef(null)
   const flashRef = useRef(null)
-  const lightRef = useRef(null)
   const sliceRefs = useRef([])
   const facadeRefs = useRef([])
   const interiorRefs = useRef([])
@@ -64,31 +63,24 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1500))
     idle(() => d.preloadAllFacades())
 
-    // ---- opening: the building is assembled floor by floor, then the site begins ----
-    // The camera fades up on the empty riverbank and settles slowly while the slabs are
-    // laid; the last frame of the assembly is the resting hero. Nothing waits on it:
-    // scroll stays free, and a click or a floor choice completes it at once.
+    // ---- opening: the building is already there ----
+    // No construction on screen. The finished photograph fades up as one architectural
+    // shot and the camera settles a few percent, slowly, like a lens finding focus;
+    // the headline follows once the building is seen.
     const tilt = worldRef.current.parentElement
     let alive = true
     if (REDUCED) {
       gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 0.6 })
     } else {
       gsap.set(tilt, { opacity: 0 })
-      gsap.set(masterRef.current, { opacity: 0 })
-      const parts = [plateRef.current, ...sliceRefs.current]
-      const ready = Promise.all(parts.map((im) => (im.decode ? im.decode().catch(() => {}) : null)))
-      const late = new Promise((r) => setTimeout(() => r('late'), 1600))
-      Promise.race([ready, late]).then((v) => {
+      const im = masterRef.current
+      const ready = im.decode ? im.decode().catch(() => {}) : Promise.resolve()
+      const late = new Promise((r) => setTimeout(r, 1400))
+      Promise.race([ready, late]).then(() => {
         if (!alive) return
-        gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 1.1, ease: 'sine.out' })
-        if (v === 'late') {
-          // slow connection: no construction, the finished building simply arrives
-          gsap.set(masterRef.current, { opacity: 1 })
-          setIntroText(true)
-          return
-        }
-        gsap.fromTo(tilt, { scale: 1.035 }, { scale: 1, duration: 4.8, ease: 'sine.out', transformOrigin: '60% 60%' })
-        d.assemble({ onText: () => setIntroText(true) })
+        gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'sine.out' })
+        gsap.fromTo(tilt, { scale: 1.03 }, { scale: 1, duration: 5.5, ease: 'sine.out', transformOrigin: '60% 60%' })
+        setTimeout(() => alive && setIntroText(true), 700)
       })
     }
     return () => { alive = false; window.removeEventListener('resize', onR) }
@@ -198,21 +190,14 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     return { x: e.clientX - r.left, y: e.clientY - r.top }
   }
 
-  // ---- hover: floors light up, the building leans toward the cursor ----
+  // ---- hover: a floor lights up and names itself (the building itself never moves) ----
   useEffect(() => {
     const stage = stageRef.current
-    const rx = gsap.quickTo(tiltRef.current, 'rotationY', { duration: 1.2, ease: 'power3.out' })
-    const ry = gsap.quickTo(tiltRef.current, 'rotationX', { duration: 1.2, ease: 'power3.out' })
-    const lx = gsap.quickTo(lightRef.current, 'x', { duration: 0.8, ease: 'power3.out' })
-    const ly = gsap.quickTo(lightRef.current, 'y', { duration: 0.8, ease: 'power3.out' })
     const onMove = (e) => {
       const D = dir.current
-      const sp = stagePoint(e)
-      lx(sp.x); ly(sp.y)
       if (e.pointerType !== 'mouse') return
-      const nx = e.clientX / window.innerWidth - 0.5, ny = e.clientY / window.innerHeight - 0.5
-      if (D.mode === 'overview' && !REDUCED) { rx(nx * 3.2); ry(-ny * 2) } else { rx(0); ry(0) }
-      if (D.mode !== 'overview' || D.assembling) return
+      const sp = stagePoint(e)
+      if (D.mode !== 'overview') return
       const p = toImage(D.cam(), sp.x, sp.y)
       const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
       setHover((h) => (h === i ? h : i))
@@ -235,7 +220,6 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
     const D = dir.current
     if (D.mode !== 'overview') return
     if (e.target.closest('button, a, .ui-block')) return
-    if (D.assembling) { D.skipAssembly(); return }
     const sp = stagePoint(e)
     const p = toImage(D.cam(), sp.x, sp.y) // the camera as it is on screen, approach included
     const i = FLOORS.findIndex((f) => p.x >= f.slice.x && p.x <= f.slice.x + f.slice.w && p.y >= f.slice.y && p.y <= f.slice.y + f.slice.h)
@@ -307,7 +291,6 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
       <div className="mist" aria-hidden="true"><i /><i /><i /></div>
       <div className="flash" ref={flashRef} />
       <div className="scrim" />
-      <div className="cursor-light" ref={lightRef} />
       <div className="grain" />
 
       {/* ---------------- OVERVIEW UI ---------------- */}

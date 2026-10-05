@@ -10,6 +10,7 @@ import Walk from './components/Walk.jsx'
 import Location from './components/Location.jsx'
 import Footer from './components/Footer.jsx'
 import { NAV } from './data.js'
+import { NAV as PASS } from './engine/stepper.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -33,31 +34,32 @@ export default function App() {
     gsap.ticker.add(raf)
     gsap.ticker.lagSmoothing(0)
     setLenis(l)
-    // header colour follows the section underneath it
+    // header colour and the active nav item follow the section underneath the header,
+    // read from the layout itself on every scroll (held scenes included)
     const sections = [
-      ['#project', 'dark'], ['#residences', 'light'], ['#architecture', 'light'], ['.day', 'dark'], ['.walk', 'dark'], ['#location', 'dark'], ['#enquire', 'light'],
+      ['#project', 'dark', 'project'], ['#residences', 'light', 'residences'], ['#architecture', 'light', 'architecture'],
+      ['.day', 'dark', 'architecture'], ['.walk', 'dark', 'location'], ['#location', 'dark', 'location'], ['#enquire', 'light', 'location'],
     ]
-    const triggers = sections.map(([sel, t]) => ScrollTrigger.create({
-      trigger: sel, start: 'top 40px', end: 'bottom 40px',
-      onToggle: (s) => {
-        if (!s.isActive) return
-        setTheme(t)
-        const id = sel === '.day' ? 'architecture' : sel === '.walk' ? 'location' : sel.slice(1)
-        setActive(id)
-      },
-    }))
-    // the footer is shorter than the viewport, so Enquire becomes active once it is well in view
-    triggers.push(ScrollTrigger.create({
-      trigger: '#enquire', start: 'top 70%',
-      onEnter: () => setActive('enquire'), onLeaveBack: () => setActive('location'),
-    }))
-    return () => { gsap.ticker.remove(raf); l.destroy(); triggers.forEach((t) => t.kill()) }
+    const probe = () => {
+      for (const [sel, t, id] of sections) {
+        const el = document.querySelector(sel)
+        if (!el) continue
+        const r = el.getBoundingClientRect()
+        if (r.top <= 40 && r.bottom > 40) { setTheme(t); setActive(id); break }
+      }
+      // the footer is shorter than the viewport, so Enquire becomes active once it is well in view
+      const enq = document.querySelector('#enquire')
+      if (enq && enq.getBoundingClientRect().top < window.innerHeight * 0.7) setActive('enquire')
+    }
+    const offProbe = l.on('scroll', probe)
+    probe()
+    return () => { gsap.ticker.remove(raf); offProbe(); l.destroy() }
   }, [])
 
   const scrollTo = useCallback((target) => {
     setMenu(false)
     const d = directorRef.current
-    const run = () => { lenis?.start(); lenis?.scrollTo(target, { duration: 1.8 }) }
+    const run = () => { PASS.busy = true; lenis?.start(); lenis?.scrollTo(target, { duration: 1.8, force: true, onComplete: () => { PASS.busy = false } }) }
     if (d && d.mode === 'floor') {
       d.back()
       const wait = () => (d.mode === 'overview' ? run() : setTimeout(wait, 100))
@@ -66,7 +68,9 @@ export default function App() {
   }, [lenis])
 
   const explore = useCallback((i) => {
-    lenis?.scrollTo(0, { duration: 1.6, onComplete: () => setTimeout(() => directorRef.current?.go(i), 150) })
+    PASS.busy = true
+    lenis?.start()
+    lenis?.scrollTo(0, { duration: 1.6, force: true, onComplete: () => { PASS.busy = false; setTimeout(() => directorRef.current?.go(i), 150) } })
   }, [lenis])
 
   const onNav = (id) => (e) => {
@@ -74,7 +78,9 @@ export default function App() {
     if (id === 'project') {
       setMenu(false)
       const d = directorRef.current
-      lenis?.scrollTo(0, { duration: 1.4 })
+      PASS.busy = true
+      lenis?.start()
+      lenis?.scrollTo(0, { duration: 1.4, force: true, onComplete: () => { PASS.busy = false } })
       if (d?.mode === 'floor') d.back()
       return
     }
@@ -106,7 +112,7 @@ export default function App() {
           <Residences onExplore={explore} />
           <Story lenis={lenis} />
           <Day lenis={lenis} />
-          <Walk />
+          <Walk lenis={lenis} />
           <Location />
           <Footer />
         </div>

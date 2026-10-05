@@ -1,6 +1,5 @@
 import gsap from 'gsap'
 import { FLOORS } from '../data.js'
-import { ASSEMBLY, assemblyStart, addAssembly } from './assembly.js'
 import { baseLayout, pushCam, floorCam, zoomAbout, facadeMatchScale, isMobile } from './camera.js'
 
 const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -108,37 +107,8 @@ export class Director {
     this.els.facades.forEach((f) => this.loadImg(f))
   }
 
-  // ---------- opening: the building is assembled, floor by floor ----------
-  // The empty riverbank (the plate), the seven slices lowered into place from the ground
-  // floor up, then the photograph resolves over the stack and the stage is exactly the
-  // resting overview — the same state the constructor leaves when nothing plays.
-  assemble({ onText, onDone } = {}) {
-    const { master, plate, slices } = this.els
-    if (reduce) { onText?.(); onDone?.(); return }
-    this.assembling = true
-    const done = () => {
-      gsap.set(slices, { opacity: 0, y: 0, filter: 'brightness(1)' })
-      gsap.set(plate, { opacity: 0 })
-      this.assembling = false
-      this.assembly = null
-      onDone?.()
-    }
-    const tl = gsap.timeline({ onComplete: done })
-    tl.set(master, { opacity: 0 }, 0)
-      .set(plate, { opacity: 1, filter: 'brightness(1)' }, 0)
-      .set(slices, assemblyStart(), 0)
-    const landed = addAssembly(tl, slices, 0.45)
-    // the headline arrives while the upper floors settle — after the building, never over it
-    tl.call(() => onText?.(), null, landed - ASSEMBLY.dur - ASSEMBLY.stagger)
-    tl.to(master, { opacity: 1, duration: 1.2, ease: 'sine.inOut' }, landed - 0.5)
-    this.assembly = tl
-  }
-  // any interaction during the opening completes it at once
-  skipAssembly() { if (this.assembly) this.assembly.progress(1) }
-
   // ---------- public API ----------
   go(i) {
-    this.skipAssembly()
     if (i === this.active && this.mode === 'floor') return
     if (this.mode === 'moving') { this.queue = i; return }
     if (i < 0) return this.back()

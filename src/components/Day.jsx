@@ -1,16 +1,15 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { FLOORS, MASTER, BUILDING_BOX as BB, img, srcset } from '../data.js'
-
-gsap.registerPlugin(ScrollTrigger)
+import { useStepper, STEP_EASE } from '../engine/stepper.js'
 
 /*
  * A day at STRATA — follow the light.
  * Behind the Case told it as "a different hour on every floor"; here the visitor lives it.
- * Scroll is the clock: the minutes run under the thumb, each hour opens its room like a
- * floor slab, and the building beside it lights the level that owns that hour — so the day
- * is seen climbing the building, garden at dawn to the pavilion at blue hour.
+ * Each gesture moves the clock to the next hour (the minutes run in a fixed, calm time),
+ * the room of that hour opens like a floor slab, and the building beside it lights the
+ * level that owns that hour, so the day is seen climbing the building: the garden at
+ * dawn, the pavilion at blue hour.
  */
 
 const STOPS = [
@@ -27,11 +26,7 @@ const STOPS = [
   return { ...s, i, fl: FLOORS[i], min: h * 60 + m }
 })
 const N = STOPS.length
-const STEP_VH = 62
-const MOVE = 0.5
 const DAY = { a: 6 * 60, b: 24 * 60 }
-const clamp = (v, a, b) => Math.min(b, Math.max(a, v))
-const ease = gsap.parseEase('power2.inOut')
 const fmt = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`
 const pctDay = (m) => ((m - DAY.a) / (DAY.b - DAY.a)) * 100
 
@@ -43,34 +38,26 @@ export default function Day({ lenis }) {
   const root = useRef(null)
   const clock = useRef(null)
   const bar = useRef(null)
-  const [at, setAt] = useState(0)
+  const [at, go] = useStepper(root, { count: N, lenis, hold: 1300 })
+  const t = useRef({ m: STOPS[0].min })
+  const prev = useRef(0)
 
+  // the minutes run from one hour to the next in a fixed time, however fast the scroll
   useLayoutEffect(() => {
-    let last = -1
-    const apply = (p) => {
-      const t = clamp(p, 0, 0.9999) * N
-      const k = Math.floor(t)
-      if (k !== last) { last = k; setAt(k) }
-      // the clock runs from the previous hour to this one, then holds
-      const b = k === 0 ? 1 : ease(clamp((t - k) / MOVE, 0, 1))
-      const m = k === 0 ? STOPS[0].min : STOPS[k - 1].min + (STOPS[k].min - STOPS[k - 1].min) * b
-      if (clock.current) clock.current.textContent = fmt(m)
-      if (bar.current) bar.current.style.transform = `scaleX(${pctDay(m) / 100})`
+    const draw = () => {
+      if (clock.current) clock.current.textContent = fmt(t.current.m)
+      if (bar.current) bar.current.style.transform = `scaleX(${pctDay(t.current.m) / 100})`
     }
-    const st = ScrollTrigger.create({ trigger: root.current, start: 'top top', end: 'bottom bottom', onUpdate: (s) => apply(s.progress) })
-    apply(0)
-    return () => st.kill()
-  }, [])
-
-  const go = (i) => {
-    const top = root.current.getBoundingClientRect().top + window.scrollY
-    const span = root.current.offsetHeight - window.innerHeight
-    lenis?.scrollTo(top + span * ((i + MOVE + 0.05) / N), { duration: 1.8 })
-  }
+    // one hour at a time; arriving from below, the evening is simply there
+    if (Math.abs(at - prev.current) > 1) { gsap.killTweensOf(t.current); t.current.m = STOPS[at].min }
+    else gsap.to(t.current, { m: STOPS[at].min, duration: 1.5, ease: STEP_EASE, overwrite: true, onUpdate: draw })
+    prev.current = at
+    draw()
+  }, [at])
 
   const S = STOPS[at]
   return (
-    <section className="day" ref={root} style={{ height: `calc(${N * STEP_VH}vh + 100vh)` }} aria-label="A day at STRATA">
+    <section className="day" ref={root} aria-label="A day at STRATA">
       <div className="day-sticky">
         <div className="day-rooms">
           {STOPS.map((s, i) => (
