@@ -769,3 +769,11 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
   .hero-ui, .floor-ui > *, .floor-head > *, .details, .details-in > *, .view-details.ui-floor .details-in > *, .plan-layer, .views-ink, .main-nav {
     transition-duration: .2s !important; transition-delay: 0s !important; }
 }
+
+/* held scenes on touch screens: a quiet note that the scene never has to be finished */
+.held-hint { position: fixed; left: 50%; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 40; margin: 0; transform: translate(-50%, 6px);
+  display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 99px; background: rgba(18, 17, 16, .42);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); color: var(--bone); font-size: 8.5px; letter-spacing: .16em;
+  text-transform: uppercase; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.held-hint i { width: 1px; height: 10px; background: currentColor; opacity: .7; }
+.held-hint.on { opacity: .78; transform: translate(-50%, 0); transition-delay: .7s; }

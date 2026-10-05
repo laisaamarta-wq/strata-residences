@@ -21,6 +21,15 @@ export default function App() {
   const [scrolled, setScrolled] = useState(false)
   const [active, setActive] = useState('project')
   const [stageUi, setStageUi] = useState({ inside: false, details: false })
+  // on touch screens, a held scene shows for a moment how to move on without finishing it
+  const [held, setHeld] = useState(false)
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return
+    let t = 0
+    const on = (e) => { clearTimeout(t); setHeld(e.detail); if (e.detail) t = setTimeout(() => setHeld(false), 3600) }
+    window.addEventListener('strata:held', on)
+    return () => { clearTimeout(t); window.removeEventListener('strata:held', on) }
+  }, [])
   const onUiChange = useCallback((u) => setStageUi((p) => (p.inside === u.inside && p.details === u.details ? p : u)), [])
   const directorRef = useRef(null)
 
@@ -117,6 +126,7 @@ export default function App() {
           <Footer />
         </div>
       </main>
+      <p className={`held-hint mono ${held ? 'on' : ''}`} aria-hidden="true"><i />Swipe to step · long swipe to move on</p>
     </>
   )
 }

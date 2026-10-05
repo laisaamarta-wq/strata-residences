@@ -49,8 +49,10 @@ export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe =
       if (ACTIVE && ACTIVE !== s) ACTIVE.locked = false
       ACTIVE = s
       s.locked = true
+      s.impatient = 0
       set(i)
       s.until = performance.now() + 650
+      window.dispatchEvent(new CustomEvent('strata:held', { detail: true }))
       s.snapping = true
       lenis.scrollTo(top(), { duration: 0.6, force: true, lock: true, easing: glide, onComplete: () => { s.snapping = false; if (s.locked) lenis.stop() } })
     }
@@ -58,6 +60,7 @@ export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe =
       unqueue()
       s.locked = false
       if (ACTIVE === s) ACTIVE = null
+      window.dispatchEvent(new CustomEvent('strata:held', { detail: false }))
       lenis.start()
       const y = dir > 0 ? top() + el.offsetHeight : top() - window.innerHeight
       // the glide to the neighbour cannot be interrupted by the rest of the same gesture
@@ -102,6 +105,7 @@ export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe =
         // something else moved the page away (the header navigation): let go
         s.locked = false
         if (ACTIVE === s) ACTIVE = null
+        window.dispatchEvent(new CustomEvent('strata:held', { detail: false }))
       }
       lastY = y
     }
@@ -136,22 +140,51 @@ export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe =
       run += d
       if (Math.abs(run) > flow) { const dir = run > 0 ? 1 : -1; run = 0; request(dir, false) }
     }
-    let y0 = null, fired = false
-    const onTouchStart = (e) => { y0 = e.touches[0].clientY; fired = false }
+    // ---- touch: a short swipe steps; the scene never has to be finished ----
+    // A long swipe (about a quarter of the screen), or a second swipe given before the
+    // scene has settled, means "move on": the page glides, at the usual calm pace, to the
+    // neighbouring section from whatever state the scene is in. Coming back, the scene
+    // opens again where it should and steps as before.
+    let y0 = null, ty0 = null, fired = false, gone = false
+    const escape = () => Math.max(140, window.innerHeight * 0.26)
+    const leave = (dir) => { gone = true; s.impatient = 0; s.until = performance.now() + 800; release(dir) }
+    // A step re-renders the scene, and the element under the finger may be replaced; a
+    // touch keeps reporting to its original (now detached) target, whose events no longer
+    // reach the window. So the gesture is also followed on its own target.
+    let tgt = null
+    const SEEN = Symbol('seen') // per scene: the same event may arrive twice (target, then window)
+    const unhook = () => { if (tgt) { tgt.removeEventListener('touchmove', onTouchMove); tgt.removeEventListener('touchend', unhook); tgt = null } }
+    const onTouchStart = (e) => {
+      y0 = ty0 = e.touches[0].clientY; fired = false; gone = false
+      unhook()
+      if (s.locked && e.target instanceof EventTarget && e.target !== window) {
+        tgt = e.target
+        tgt.addEventListener('touchmove', onTouchMove, { passive: false })
+        tgt.addEventListener('touchend', unhook)
+      }
+    }
     const onTouchMove = (e) => {
+      if (e[SEEN]) return
+      e[SEEN] = true
       if (GLIDE.on && e.cancelable) { e.preventDefault(); return }
       if (!s.locked) return
       e.preventDefault()
-      if (y0 === null) return
+      if (y0 === null || gone) return
       const y = e.touches[0].clientY
-      if (fired) {
-        // one long drag (flow): the finger's travel during the transition belongs to the
-        // step just taken; after that, every further `flow` px asks for the next state
-        if (!flow) return
-        if (performance.now() < s.until - ahead) { y0 = y; return }
-      }
+      const travel = ty0 - y
+      if (Math.abs(travel) > escape()) { leave(travel > 0 ? 1 : -1); return }
+      if (fired) return
       const dy = y0 - y
-      if (Math.abs(dy) > (fired ? flow : swipe)) { const first = !fired; fired = true; y0 = y; request(dy > 0 ? 1 : -1, first) }
+      if (Math.abs(dy) > swipe) {
+        fired = true
+        const dir = dy > 0 ? 1 : -1
+        if (performance.now() < s.until - 120) {
+          // swiping again while the scene is still moving: the second time, let go
+          s.impatient = (s.impatient || 0) + 1
+          if (s.impatient >= 2) { leave(dir); return }
+        } else s.impatient = 0
+        request(dir, true)
+      }
     }
     const onKey = (e) => {
       if (!s.locked || e.target.closest?.('input, textarea, select')) return
@@ -169,6 +202,7 @@ export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe =
     return () => {
       offScroll?.()
       unqueue()
+      unhook()
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchmove', onTouchMove)

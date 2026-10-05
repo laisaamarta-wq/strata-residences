@@ -127,6 +127,8 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   // Back is progressive: an open panel (plan / details) closes first, then the floor.
   const viewRef = useRef(view)
   viewRef.current = view
+  const onGoToRef = useRef(onGoTo)
+  onGoToRef.current = onGoTo
 
   useEffect(() => {
     let acc = 0, accT = 0, touchY = null, coolUntil = 0
@@ -148,12 +150,25 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
       acc += e.deltaY
       if (Math.abs(acc) > 40) { acc = 0; if (performance.now() > coolUntil) { coolUntil = performance.now() + 700; exit() } }
     }
-    const onTS = (e) => { touchY = ownScroll(e.target) ? null : e.touches[0].clientY }
+    // a view change can replace the element under the finger; follow the touch on its target too
+    let tgt = null
+    const SEEN = Symbol('seen')
+    const unhook = () => { if (tgt) { tgt.removeEventListener('touchend', onTE); tgt = null } }
+    const onTS = (e) => {
+      touchY = ownScroll(e.target) ? null : e.touches[0].clientY
+      unhook()
+      if (D().mode !== 'overview' && e.target instanceof Element) { tgt = e.target; tgt.addEventListener('touchend', onTE) }
+    }
     const onTM = (e) => { if (D().mode !== 'overview' && touchY !== null && e.cancelable) e.preventDefault() }
-    const onTE = (e) => {
+    function onTE(e) {
+      if (e[SEEN]) return
+      e[SEEN] = true
+      unhook()
       if (touchY === null || D().mode === 'overview') { touchY = null; return }
       const dy = touchY - e.changedTouches[0].clientY
       touchY = null
+      // a long swipe down means "move on": out of the residence and on down the page
+      if (dy > Math.max(140, window.innerHeight * 0.26) && D().mode === 'floor') { setView('space'); onGoToRef.current?.('#residences'); return }
       if (Math.abs(dy) > 50) exit()
     }
     const onKey = (e) => {
