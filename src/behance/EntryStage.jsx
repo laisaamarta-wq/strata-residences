@@ -23,7 +23,7 @@ const STEPS = [
 // scroll progress at which each step begins (the enter timeline runs from 0.09 to 0.78)
 const BOUNDS = [0, 0.09, 0.3, 0.56, 0.84]
 const TL_A = 0.09, TL_B = 0.78, ZONE_AT = 0.84
-const DEFAULT_FLOOR = 4
+const DEFAULT_FLOOR = 3
 
 const elevNum = (f) => parseFloat(FLOORS[f].elevation.replace('±', '').replace('+', '')) || 0
 const fmtElev = (v) => (v < 0.005 ? '±0.00' : `+${v.toFixed(2)}`)

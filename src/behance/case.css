@@ -194,10 +194,38 @@
 .cs-move-head .cs-h em { color: var(--travertine); }
 
 /* ==========================================================================
+   06 — materiality (calm): facade and sample board at architectural scale
+   ========================================================================== */
+.cs-mat2 { background: var(--paper-2); }
+.cs-mat2-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(40px, 6vw, 110px); align-items: end; }
+.cs-mat2-list { margin: 44px 0 0; }
+.cs-mat2-list > div { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: baseline; padding: 14px 0; border-top: 1px solid rgba(18, 17, 16, .14); }
+.cs-mat2-list dt { font-size: clamp(22px, 1.9vw, 30px); }
+.cs-mat2-list dd { margin: 0; font-size: 14.5px; color: #4a4640; }
+.cs-mat2-media { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; align-items: end; }
+.cs-mat2 figure { margin: 0; }
+.cs-mat2-img { overflow: hidden; }
+.cs-mat2-a .cs-mat2-img { aspect-ratio: 4 / 5; }
+.cs-mat2-b .cs-mat2-img { aspect-ratio: 1 / 1; }
+.cs-mat2-img img { width: 100%; height: 100%; object-fit: cover; }
+.cs-mat2 figcaption { display: flex; gap: 12px; padding-top: 12px; opacity: .6; white-space: nowrap; }
+.cs-mat2 figcaption span { color: var(--bronze); opacity: 1; }
+
+/* ==========================================================================
    contact
    ========================================================================== */
 .cs-ct { padding: clamp(110px, 18vh, 200px) 0 clamp(80px, 12vh, 130px); }
-.cs-ct-h { font-family: var(--serif); font-weight: 400; font-size: clamp(56px, 8.4vw, 160px); line-height: .9; letter-spacing: -.024em; margin: 0 0 clamp(60px, 10vh, 110px); }
+.cs-ct-h { font-family: var(--serif); font-weight: 400; font-size: clamp(56px, 8.4vw, 160px); line-height: .9; letter-spacing: -.024em; margin: 0 0 40px; }
+.cs-ct-lead { margin: 0; max-width: 30em; font-size: 17px; line-height: 1.6; opacity: .7; }
+.cs-ct-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: clamp(48px, 8vh, 80px); }
+.cs-ct-btn { display: inline-flex; align-items: center; gap: 14px; padding: 18px 24px; border: 1px solid rgba(238, 233, 224, .5); font-size: 11.5px;
+  transition: background .5s var(--ease-out), color .5s var(--ease-out), border-color .5s; }
+.cs-ct-btn span { transition: transform .5s var(--ease-out); }
+.cs-ct-btn:hover { background: var(--bone); color: var(--ink); border-color: var(--bone); }
+.cs-ct-btn:hover span { transform: translateX(4px); }
+.cs-ct-btn.is-primary { background: var(--bone); color: var(--ink); border-color: var(--bone); }
+.cs-ct-btn.is-primary:hover { background: transparent; color: var(--bone); }
+.cs-ct-btn:focus-visible { outline: 1px solid var(--bronze-l); outline-offset: 4px; }
 .cs-ct-h em { color: var(--travertine); }
 .cs-ct-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, .7fr); gap: clamp(40px, 6vw, 120px); align-items: end; }
 .cs-ct-rows { list-style: none; margin: 0; padding: 0; }
@@ -329,6 +357,8 @@
 .cs-hour-item.r { margin-left: auto; width: 76%; }
 .cs-hour-img { aspect-ratio: 16 / 10; overflow: hidden; }
 .cs-hour-img img { width: 100%; height: 100%; object-fit: cover; }
+/* the river-sunset floor keeps its hour, without the over-saturated sky */
+.cs-hour-item:nth-child(5) img { filter: saturate(.72) contrast(.97); }
 .cs-hour-item figcaption { display: flex; gap: 18px; padding-top: 14px; opacity: .6; }
 .cs-hour-item figcaption span:first-child { color: var(--bronze); opacity: 1; }
 
@@ -479,7 +509,9 @@
 }
 
 @media (max-width: 899px) {
-  .cs-intro-grid, .cs-cn-grid, .cs-ct-grid { grid-template-columns: 1fr; }
+  .cs-intro-grid, .cs-cn-grid, .cs-ct-grid, .cs-mat2-grid { grid-template-columns: 1fr; }
+  .cs-mat2-list > div { grid-template-columns: 1fr; gap: 4px; }
+  .cs-ct-btn { flex: 1 1 calc(50% - 6px); justify-content: space-between; }
   .cs-cn { height: 240vh; }
   .cs-cn-sticky { align-items: flex-start; padding-top: 84px; }
   .cs-cn-text .cs-p { font-size: 15px; }

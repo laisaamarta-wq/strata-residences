@@ -19,7 +19,7 @@ gsap.registerPlugin(ScrollTrigger)
 
 const LOOP = 12
 const FOCUS = { x: BB.x + BB.w / 2, y: 640 } // between the building's centre and Level 04
-const F04 = FLOORS[4]
+const ENTRY = FLOORS[3] // the level the case study walks into (Level 03)
 
 function cams(vw, vh) {
   const portrait = vw / vh < 0.9
@@ -82,7 +82,7 @@ export default function Opening() {
     tl.to(meter.current, { opacity: 0, duration: 0.6 }, landed + 0.1)
     // FRAME 07 — the photograph resolves over the stack, and the building holds
     tl.to(master.current, { opacity: 1, duration: 1.3, ease: 'sine.inOut' }, landed - 0.45)
-    // Level 04 is drawn: this is where the visitor will go in
+    // Level 03 is drawn: this is where the visitor will go in
     tl.to(line.current, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, landed + 1.0)
     tl.to(fill.current, { opacity: 0.1, duration: 1.2, ease: 'sine.inOut' }, landed + 1.2)
     // FRAME 08 — STRATA Residences, Behind the Case
@@ -113,7 +113,7 @@ export default function Opening() {
     return () => { tl.kill(); st.scrollTrigger?.kill(); st.kill(); io.disconnect(); window.removeEventListener('resize', onR) }
   }, [])
 
-  const s = F04.slice
+  const s = ENTRY.slice
   return (
     <section className="cs-op" ref={root} data-chapter="00 — Arrival">
       <div className="cs-op-sticky">

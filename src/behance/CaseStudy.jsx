@@ -40,7 +40,7 @@ const MOVES = [
 
 const HOURS = [
   { f: 0, im: 'g-lobby' }, { f: 1, im: '01-living' }, { f: 2, im: '02-living' }, { f: 3, im: '03-living' },
-  { f: 4, im: '04-view' }, { f: 5, im: '05-terrace' }, { f: 6, im: 'ph-pool' },
+  { f: 4, im: '04-living' }, { f: 5, im: '05-terrace' }, { f: 6, im: 'ph-pool' },
 ]
 
 const MATERIALS = [
@@ -79,7 +79,6 @@ export default function CaseStudy() {
   const [chapter, setChapter] = useState('00 — Arrival')
   const mail = `mailto:${CONTACT.email}?subject=${encodeURIComponent('Project enquiry — via the STRATA case study')}`
   const [hour, setHour] = useState(0)
-  const [mat, setMat] = useState(0)
   const [dev, setDev] = useState(0)
 
   useEffect(() => {
@@ -153,11 +152,6 @@ export default function CaseStudy() {
       })
 
       // materiality: zoom into the sample board
-      gsap.fromTo('.cs-mat-img', { scale: 1 }, { scale: 2.35, ease: 'power1.in',
-        scrollTrigger: { trigger: '.cs-mat', start: 'top top', end: 'bottom bottom', scrub: 0.6,
-          onUpdate: (s) => setMat(Math.min(MATERIALS.length - 1, Math.floor(s.progress * MATERIALS.length * 0.999))) } })
-      gsap.fromTo('.cs-mat-shade', { opacity: 0.1 }, { opacity: 0.55, ease: 'none',
-        scrollTrigger: { trigger: '.cs-mat', start: 'top top', end: 'bottom bottom', scrub: true } })
 
       // palette columns grow in like strata
       gsap.fromTo('.cs-pal-col', { clipPath: 'inset(100% 0% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 1.2, stagger: 0.07, ease: 'power3.inOut',
@@ -175,8 +169,8 @@ export default function CaseStudy() {
       gsap.fromTo('.cs-final-in > *', { opacity: 0, y: 30 }, { opacity: 1, y: 0, stagger: 0.12, ease: 'power3.out',
         scrollTrigger: { trigger: '.cs-final', start: '55% bottom', end: 'bottom bottom', scrub: 0.5 } })
       // contact: the rows draw their rules left to right
-      gsap.fromTo('.cs-ct-row', { '--rule': 0 }, { '--rule': 1, duration: 1.2, stagger: 0.1, ease: 'power3.inOut',
-        scrollTrigger: { trigger: '.cs-ct-rows', start: 'top 85%' } })
+      gsap.fromTo('.cs-ct-btn', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1, stagger: 0.07, ease: 'power3.out',
+        scrollTrigger: { trigger: '.cs-ct-actions', start: 'top 90%' } })
     }, root)
     return () => ctx.revert()
   }, [])
@@ -284,19 +278,19 @@ export default function CaseStudy() {
             </div>
           </div>
         </section>
-        {/* 06 — materiality: a slow zoom into the sample board */}
-        <section className="cs-mat cs-dark" data-chapter="06 — Materiality">
-          <div className="cs-mat-sticky">
-            <img className="cs-mat-img" alt="Material board — basalt, travertine, bronze, oak, linen and birch" src={img('materials', 2400)} srcSet={srcset('materials')} sizes="100vw" loading="lazy" />
-            <div className="cs-mat-shade" />
-            <div className="cs-mat-text cs-wrap">
+        {/* 06 — materiality: the real facade, with the sample board as a quiet companion */}
+        <section className="cs-sec cs-mat2" data-chapter="06 — Materiality">
+          <div className="cs-wrap cs-mat2-grid">
+            <div>
               <Kicker n="06">Materiality</Kicker>
-              <p className="serif cs-mat-big">Heavy at the water,<br /><em>light at the sky.</em></p>
-              <ol className="cs-mat-list">
-                {MATERIALS.map(([a, b], i) => (
-                  <li key={a} className={i === mat ? 'on' : i < mat ? 'past' : ''}><b className="serif">{a}</b><span className="mono">{b}</span></li>
-                ))}
-              </ol>
+              <h2 className="serif cs-h-s cs-lines"><span className="ln"><span>Heavy at the water,</span></span><span className="ln"><span><em>light at the sky.</em></span></span></h2>
+              <dl className="cs-mat2-list cs-rise">
+                {MATERIALS.map(([a, b]) => <div key={a}><dt className="serif">{a}</dt><dd>{b}</dd></div>)}
+              </dl>
+            </div>
+            <div className="cs-mat2-media">
+              <figure className="cs-mat2-a"><div className="cs-mat2-img cs-slab"><img alt="Facade — travertine slab edges and bronze fins" src={img('detail', 1280)} srcSet={srcset('detail')} sizes="30vw" loading="lazy" /></div><figcaption className="mono"><span>Facade</span>Travertine edges, bronze fins</figcaption></figure>
+              <figure className="cs-mat2-b"><div className="cs-mat2-img cs-slab"><img alt="Sample board — basalt, travertine, bronze, oak" src={img('materials', 1280)} srcSet={srcset('materials')} sizes="24vw" loading="lazy" /></div><figcaption className="mono"><span>Board</span>Stone, metal, oak</figcaption></figure>
             </div>
           </div>
         </section>
@@ -438,18 +432,14 @@ export default function CaseStudy() {
           <div className="cs-wrap">
             <p className="cs-k mono"><span>—</span><span>Let’s work together</span></p>
             <h2 className="serif cs-ct-h">Interested in<br /><em>working together?</em></h2>
-            <div className="cs-ct-grid">
-              <ul className="cs-ct-rows">
-                <li><a className="cs-ct-row" href={`mailto:${CONTACT.email}`}><span className="mono">Email</span><span className="cs-ct-v">{CONTACT.email}</span><span className="cs-ct-a" aria-hidden="true">→</span></a></li>
-                <li><a className="cs-ct-row" href={`tel:${CONTACT.tel}`}><span className="mono">Phone · WhatsApp</span><span className="cs-ct-v">{CONTACT.phone}</span><span className="cs-ct-a" aria-hidden="true">→</span></a></li>
-                <li><a className="cs-ct-row" href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer"><span className="mono">LinkedIn</span><span className="cs-ct-v">Marta Jakovleva</span><span className="cs-ct-a" aria-hidden="true">↗</span></a></li>
-                <li><a className="cs-ct-row" href={LIVE} target="_blank" rel="noopener noreferrer"><span className="mono">Live experience</span><span className="cs-ct-v">strata-residences-mu.vercel.app</span><span className="cs-ct-a" aria-hidden="true">↗</span></a></li>
-              </ul>
-              <div className="cs-ct-side">
-                <p>Marta Jakovleva — UX/UI and digital experience designer, Riga. Open to freelance projects and creative collaborations.</p>
-                <a className="cs-cta cs-ct-cta mono" href={mail}>Let’s talk <span aria-hidden="true">→</span></a>
-              </div>
-            </div>
+            <p className="cs-ct-lead">Marta Jakovleva — UX/UI and digital experience designer, Riga. Open to freelance projects and creative collaborations.</p>
+            <nav className="cs-ct-actions" aria-label="Contact">
+              <a className="cs-ct-btn is-primary mono" href={mail}>Email <span aria-hidden="true">→</span></a>
+              <a className="cs-ct-btn mono" href={`tel:${CONTACT.tel}`}>Call <span aria-hidden="true">→</span></a>
+              <a className="cs-ct-btn mono" href={`https://wa.me/${CONTACT.tel.replace('+', '')}`} target="_blank" rel="noopener noreferrer">WhatsApp <span aria-hidden="true">↗</span></a>
+              <a className="cs-ct-btn mono" href={CONTACT.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>
+              <a className="cs-ct-btn mono" href={LIVE} target="_blank" rel="noopener noreferrer">Live experience <span aria-hidden="true">↗</span></a>
+            </nav>
           </div>
         </section>
         <footer className="cs-credits mono">

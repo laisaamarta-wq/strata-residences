@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 const STOPS = [
   { k: 'Building', g: 'Hover', t: 'A floor lights up and names itself.', im: 'route-building' },
   { k: 'Level', g: 'Click', t: 'The camera walks in through the glass.', im: 'route-level' },
-  { k: 'Room', g: 'Rooms', t: 'Living, bedroom, the view — one tap each.', im: 'route-room' },
+  { k: 'Room', g: 'Rooms', t: 'Living, kitchen, the view — one tap each.', im: 'route-room' },
   { k: 'Plan', g: 'Floor plan', t: 'The drawing of the same home; rooms are doors.', im: 'route-plan' },
   { k: 'Details', g: 'Details', t: 'Figures, materials, price — beside the room.', im: 'route-details' },
   { k: 'Elevator', g: 'Level bar', t: 'Up or down without leaving the residence.', im: 'route-elevator' },

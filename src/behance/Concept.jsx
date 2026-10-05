@@ -8,20 +8,20 @@ gsap.registerPlugin(ScrollTrigger)
 /*
  * 02 — Concept: the interface as a spatial journey, drawn as depth.
  * Four frames from the real site nest inside each other along the camera's path —
- * riverbank, Level 04, through the glass, the view — each placed where the camera
- * actually goes next (Level 04 sits where it is on the photograph).
+ * riverbank, Level 03, through the glass, the terrace — each placed where the camera
+ * actually goes next (Level 03 sits where it is on the photograph).
  * Scroll first opens the depths one by one, then pushes the camera toward them.
  */
 
 const R = 0.46 // each depth is 46 % of the one before
 const DEPTHS = [
   { k: 'Riverbank', im: 'hero', pos: '50% 50%' },
-  { k: 'Level 04', im: 'facade-04', pos: '50% 50%' },
-  { k: 'Through the glass', im: '04-living', pos: '50% 50%' },
-  { k: 'The view', im: '04-view', pos: '50% 46%' },
+  { k: 'Level 03', im: 'facade-03', pos: '50% 50%' },
+  { k: 'Through the glass', im: '03-living', pos: '50% 50%' },
+  { k: 'The terrace', im: '03-terrace', pos: '50% 50%' },
 ]
-// Level 04 on the hero photograph, in frame fractions (16:10 frame, cover-fitted 16:9 image)
-const AT = { x: 49.4, y: 40.6 }
+// Level 03 on the hero photograph, in frame fractions (16:10 frame, cover-fitted 16:9 image)
+const AT = { x: 49.4, y: 49.5 }
 
 export default function Concept() {
   const root = useRef(null)
