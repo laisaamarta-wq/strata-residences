@@ -35,7 +35,7 @@ export default function Walk({ lenis }) {
   const root = useRef(null)
   const cam = useRef(null)
   const ims = useRef([])
-  const [at] = useStepper(root, { count: N, lenis, hold: 1550 })
+  const [at] = useStepper(root, { count: N, lenis, hold: 1050, wheel: 18, swipe: 26, flow: 110 })
   const prev = useRef(0)
 
   // the arrival: the city settles into view as the section comes up from below the day
@@ -54,18 +54,36 @@ export default function Walk({ lenis }) {
     if (from === to) return
     const A = ims.current[from], B = ims.current[to]
     const fwd = to > from
-    ims.current.forEach((el, i) => { if (i !== from && i !== to) { gsap.killTweensOf(el); gsap.set(el, { opacity: 0, scale: 1 }) } })
-    gsap.killTweensOf([A, B])
     if (Math.abs(to - from) > 1) { // arriving from below: the last place is simply there
-      gsap.set(A, { opacity: 0, scale: 1 }); gsap.set(B, { opacity: 1, scale: 1 }); return
+      ims.current.forEach((el) => { gsap.killTweensOf(el); gsap.set(el, { opacity: 0, scale: 1 }) })
+      gsap.set(B, { opacity: 1, scale: 1 }); return
     }
-    gsap.set(B, { zIndex: 2, transformOrigin: fwd ? '50% 50%' : origin(to) })
-    gsap.set(A, { zIndex: 1, transformOrigin: fwd ? origin(from) : '50% 50%' })
+    // a step may begin while the last one is still dissolving: everything continues from
+    // where it is — older places fade out underneath, nothing is reset or cut
+    ims.current.forEach((el, i) => {
+      if (i === from || i === to) return
+      gsap.killTweensOf(el)
+      if (gsap.getProperty(el, 'opacity') > 0) gsap.to(el, { opacity: 0, duration: DUR * 0.45, ease: 'sine.inOut' })
+      gsap.set(el, { zIndex: 0 })
+    })
+    gsap.killTweensOf([A, B])
     const tl = gsap.timeline({ defaults: { ease: STEP_EASE } })
-    tl.fromTo(A, { scale: 1 }, { scale: fwd ? PUSH : 1.12, duration: DUR }, 0)
+    if (gsap.getProperty(B, 'opacity') > 0.01) {
+      // turned back mid-step: the place being left is still underneath — it simply returns
+      // while the one on top fades away
+      gsap.set(B, { zIndex: 1 }); gsap.set(A, { zIndex: 2 })
+      tl.to(B, { opacity: 1, scale: 1, duration: DUR * 0.6 }, 0)
+        .to(A, { opacity: 0, duration: DUR * 0.6, ease: 'sine.inOut' }, 0)
+      return
+    }
+    const settled = Math.abs(gsap.getProperty(A, 'scale') - 1) < 0.004
+    gsap.set(B, { zIndex: 2, transformOrigin: fwd ? '50% 50%' : origin(to) })
+    gsap.set(A, { zIndex: 1, ...(settled ? { transformOrigin: fwd ? origin(from) : '50% 50%' } : {}) })
+    tl.to(A, { scale: fwd ? PUSH : 1.12, duration: DUR }, 0)
       .fromTo(B, { scale: fwd ? 1.12 : PUSH, opacity: 0 }, { scale: 1, duration: DUR }, 0)
       .to(B, { opacity: 1, duration: DUR * 0.62, ease: 'sine.inOut' }, DUR * 0.18)
       .to(A, { opacity: 0, duration: DUR * 0.3, ease: 'sine.in' }, DUR * 0.7)
+    if (gsap.getProperty(A, 'opacity') < 1) tl.to(A, { opacity: 1, duration: DUR * 0.3, ease: 'sine.out' }, 0)
   }, [at])
 
   const P = PLACES[at]

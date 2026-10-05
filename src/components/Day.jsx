@@ -38,7 +38,7 @@ export default function Day({ lenis }) {
   const root = useRef(null)
   const clock = useRef(null)
   const bar = useRef(null)
-  const [at, go] = useStepper(root, { count: N, lenis, hold: 1050, wheel: 18, swipe: 26 })
+  const [at, go] = useStepper(root, { count: N, lenis, hold: 620, wheel: 18, swipe: 26, flow: 90 })
   const t = useRef({ m: STOPS[0].min })
   const prev = useRef(0)
 
