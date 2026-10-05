@@ -184,7 +184,7 @@ em { font-style: italic; }
 .hero-ui .r1, .hero-ui .r3, .hero-ui .r4 { animation: fadeUp 1.6s var(--ease-out) both; }
 .hero-ui .r1 { animation-delay: .5s; } .hero-ui .r3 { animation-delay: 1.15s; } .hero-ui .r4 { animation-delay: 1.35s; }
 .hero-title .ln > span { animation: lineUp 1.7s var(--ease-out) both; }
-/* the headline waits for the building: its entrance starts during the last floors of the assembly */
+/* the headline waits for the building: its entrance starts once the building has been seen */
 .stage:not(.intro-on) .hero-ui .r1, .stage:not(.intro-on) .hero-ui .r3, .stage:not(.intro-on) .hero-ui .r4,
 .stage:not(.intro-on) .hero-title .ln > span { animation-play-state: paused; }
 .hero-title .ln:nth-child(1) > span { animation-delay: .65s; } .hero-title .ln:nth-child(2) > span { animation-delay: .8s; }

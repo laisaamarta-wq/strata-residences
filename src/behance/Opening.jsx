@@ -2,17 +2,15 @@ import { useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { FLOORS, MASTER, BUILDING_BOX as BB, img } from '../data.js'
-import { assemblyStart, addAssembly } from '../engine/assembly.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
 /*
  * 00 — Opening of Behind the Case.
- * The same assembly as the opening of the site (engine/assembly.js): the empty
- * riverbank, then the seven floor slices lowered into place, ground floor first,
- * under one slow approaching camera. The building is the first thing seen; the
- * photograph resolves over the stack, holds, Level 04 is drawn — and only then
- * does the title arrive. The entry itself is left to a later scene.
+ * As on the site: the building is already there. The finished photograph fades up as
+ * one architectural shot under a single slow approaching camera; Level 03 is drawn —
+ * the level the case study walks into — and only then does the title arrive.
+ * Nothing is constructed on screen.
  *
  * Time drives the loop; scroll drives the push that carries it into the case study.
  */
@@ -20,6 +18,7 @@ gsap.registerPlugin(ScrollTrigger)
 const LOOP = 12
 const FOCUS = { x: BB.x + BB.w / 2, y: 640 } // between the building's centre and Level 04
 const ENTRY = FLOORS[3] // the level the case study walks into (Level 03)
+const DRAW = 3.4 // the building has been seen for a few seconds before anything is drawn on it
 
 function cams(vw, vh) {
   const portrait = vw / vh < 0.9
@@ -43,9 +42,7 @@ export default function Opening() {
   const push = useRef(null)
   const world = useRef(null)
   const veil = useRef(null)
-  const meter = useRef(null)
   const master = useRef(null)
-  const slices = useRef([])
   const line = useRef(null)
   const fill = useRef(null)
   const end = useRef(null)
@@ -60,33 +57,24 @@ export default function Opening() {
       const s = Math.exp(lerp(Math.log(a.s), Math.log(b.s), t)) // constant perceived speed
       gsap.set(world.current, { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), scale: s, transformOrigin: '0 0' })
     }
-    const setMeter = (i) => { if (meter.current) meter.current.textContent = `${FLOORS[i].label} · ${FLOORS[i].elevation} m` }
 
     const tl = gsap.timeline({ repeat: reduce ? 0 : -1, defaults: { overwrite: false } })
     // initial state of every loop
     tl.set(veil.current, { opacity: 1 }, 0)
-      .set(slices.current, assemblyStart(), 0)
-      .set(master.current, { opacity: 0 }, 0)
+      .set(master.current, { opacity: 1 }, 0)
       .set(line.current, { strokeDashoffset: 1 }, 0)
       .set(fill.current, { opacity: 0 }, 0)
       .set(end.current.children, { opacity: 0, y: 18 }, 0)
-      .set(meter.current, { opacity: 0 }, 0)
       .set(cam, { k: 0, onComplete: put }, 0)
 
-    // FRAME 01 — the empty riverbank, and the camera already moving
-    tl.to(veil.current, { opacity: 0, duration: 1.5, ease: 'sine.inOut' }, 0.2)
-    tl.to(cam, { k: 1, duration: 8.8, ease: 'sine.inOut', onUpdate: put }, 0.2)
-    // FRAMES 02–06 — floor by floor, ground first; a quiet meter follows the height
-    tl.to(meter.current, { opacity: 0.8, duration: 0.6 }, 1.0)
-    const landed = addAssembly(tl, slices.current, 1.1, setMeter)
-    tl.to(meter.current, { opacity: 0, duration: 0.6 }, landed + 0.1)
-    // FRAME 07 — the photograph resolves over the stack, and the building holds
-    tl.to(master.current, { opacity: 1, duration: 1.3, ease: 'sine.inOut' }, landed - 0.45)
+    // the building, whole, as the light comes up — and the camera already moving
+    tl.to(veil.current, { opacity: 0, duration: 1.8, ease: 'sine.inOut' }, 0.2)
+    tl.to(cam, { k: 1, duration: 9.6, ease: 'sine.inOut', onUpdate: put }, 0.2)
     // Level 03 is drawn: this is where the visitor will go in
-    tl.to(line.current, { strokeDashoffset: 0, duration: 1.3, ease: 'power2.inOut' }, landed + 1.0)
-    tl.to(fill.current, { opacity: 0.1, duration: 1.2, ease: 'sine.inOut' }, landed + 1.2)
-    // FRAME 08 — STRATA Residences, Behind the Case
-    tl.to(end.current.children, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', stagger: 0.16 }, landed + 1.4)
+    tl.to(line.current, { strokeDashoffset: 0, duration: 1.4, ease: 'power2.inOut' }, DRAW)
+    tl.to(fill.current, { opacity: 0.1, duration: 1.2, ease: 'sine.inOut' }, DRAW + 0.2)
+    // STRATA Residences, Behind the Case
+    tl.to(end.current.children, { opacity: 1, y: 0, duration: 1.2, ease: 'power3.out', stagger: 0.16 }, DRAW + 0.5)
     // close the loop on black
     tl.to(veil.current, { opacity: 1, duration: 0.9, ease: 'power2.in' }, LOOP - 1.0)
     tl.set({}, {}, LOOP)
@@ -120,11 +108,6 @@ export default function Opening() {
         <div className="cs-op-push" ref={push}>
           <div className="cs-op-sky" />
           <div className="cs-op-world" ref={world} style={{ width: MASTER.w, height: MASTER.h }}>
-            <img className="cs-op-plate" src={img('plate', 1600)} alt="" />
-            {FLOORS.map((f, i) => (
-              <img key={f.id} ref={(el) => (slices.current[i] = el)} className="cs-op-slice" alt="" src={`/img/slice-${f.id}.webp`}
-                style={{ left: f.slice.x, top: f.slice.y, width: f.slice.w, height: f.slice.h }} />
-            ))}
             <img ref={master} className="cs-op-master" src={img('hero', 2688)} alt="STRATA — seven levels on the Ķīpsala riverbank at dusk" />
             <svg className="cs-op-floor" viewBox={`0 0 ${MASTER.w} ${MASTER.h}`} aria-hidden="true">
               <rect ref={fill} x={s.x} y={s.y} width={s.w} height={s.h} className="cs-op-fill" />
@@ -135,7 +118,6 @@ export default function Opening() {
         <div className="cs-op-shade" />
         <div className="cs-op-dim" />
         <div className="cs-op-veil" ref={veil} />
-        <p className="mono cs-op-meter" ref={meter} aria-hidden="true" />
         <div className="cs-op-end" ref={end}>
           <p className="wordmark cs-op-mark">STRATA RESIDENCES</p>
           <h1 className="serif cs-op-line1">Behind <em>the case.</em></h1>

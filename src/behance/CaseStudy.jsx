@@ -193,7 +193,7 @@ export default function CaseStudy() {
       </header>
 
       <main id="top">
-        {/* 00 — opening: the building is laid down in strata while the camera approaches */}
+        {/* 00 — opening: the building, already there, while the camera approaches */}
         <Opening />
 
         {/* 01 — STRATA: the idea and the role; slides up over the opening */}
