@@ -5,6 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Experience from './components/Experience.jsx'
 import Residences from './components/Residences.jsx'
 import Story from './components/Story.jsx'
+import Day from './components/Day.jsx'
+import Walk from './components/Walk.jsx'
 import Location from './components/Location.jsx'
 import Footer from './components/Footer.jsx'
 import { NAV } from './data.js'
@@ -33,14 +35,14 @@ export default function App() {
     setLenis(l)
     // header colour follows the section underneath it
     const sections = [
-      ['#project', 'dark'], ['#residences', 'light'], ['#architecture', 'light'], ['.break', 'dark'], ['#location', 'dark'], ['#enquire', 'light'],
+      ['#project', 'dark'], ['#residences', 'light'], ['#architecture', 'light'], ['.day', 'dark'], ['.walk', 'dark'], ['#location', 'dark'], ['#enquire', 'light'],
     ]
     const triggers = sections.map(([sel, t]) => ScrollTrigger.create({
       trigger: sel, start: 'top 40px', end: 'bottom 40px',
       onToggle: (s) => {
         if (!s.isActive) return
         setTheme(t)
-        const id = sel === '.break' ? 'architecture' : sel.slice(1)
+        const id = sel === '.day' ? 'architecture' : sel === '.walk' ? 'location' : sel.slice(1)
         setActive(id)
       },
     }))
@@ -102,7 +104,9 @@ export default function App() {
         {/* the page below the stage is out of the tab order while a residence is open */}
         <div className="page" inert={stageUi.inside || undefined}>
           <Residences onExplore={explore} />
-          <Story />
+          <Story lenis={lenis} />
+          <Day lenis={lenis} />
+          <Walk />
           <Location />
           <Footer />
         </div>
