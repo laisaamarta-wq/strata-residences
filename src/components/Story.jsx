@@ -27,7 +27,7 @@ const CHAPTERS = [
   {
     k: 'Light', img: '04-view',
     title: 'A different hour on every floor',
-    text: 'Interiors were tuned to the light each level receives: misted mornings in the garden residences, silver noon on the second floor, long gold afternoons on the third, river sunsets above.',
+    text: 'Interiors were tuned to the light each level receives: misted mornings in the garden residences, silver noon on the second floor, clear afternoons on the third, long light evenings above.',
     facts: [['Glazing', 'Floor to ceiling'], ['Ceiling', '3.1 m'], ['Aspect', 'Dual / corner']],
   },
   {
@@ -142,7 +142,7 @@ export default function Story() {
       </div>
 
       <div className="break">
-        <div className="break-img"><img alt="Terrace on the third floor at golden hour" src={img('03-terrace', 2400)} srcSet={srcset('03-terrace')} sizes="100vw" loading="lazy" /></div>
+        <div className="break-img"><img alt="Terrace on the third floor in the afternoon sun" src={img('03-terrace', 2400)} srcSet={srcset('03-terrace')} sizes="100vw" loading="lazy" /></div>
         <div className="break-in">
           <h2 className="serif">
             <span className="ln"><span>Every level keeps</span></span>

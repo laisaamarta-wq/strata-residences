@@ -336,7 +336,7 @@ export default function CaseStudy() {
               </div>
               <div className="cs-type-i cs-rise">
                 <p className="mono cs-type-k"><span>IBM Plex Mono</span><span>Levels, time, measure</span></p>
-                <p className="mono cs-type-s3">Level 04 · +14.40 m · 19:10 River sunset</p>
+                <p className="mono cs-type-s3">Level 04 · +14.40 m · 19:10 Long summer evening</p>
               </div>
               <ul className="cs-tokens cs-rise">
                 {[['Ink', '#121110'], ['Paper', '#f3f0ea'], ['Travertine', '#d9cebb'], ['Bronze', '#9c7246'], ['Dusk', '#7d8aa3']].map(([n, c]) => (

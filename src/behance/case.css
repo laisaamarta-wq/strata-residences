@@ -357,8 +357,6 @@
 .cs-hour-item.r { margin-left: auto; width: 76%; }
 .cs-hour-img { aspect-ratio: 16 / 10; overflow: hidden; }
 .cs-hour-img img { width: 100%; height: 100%; object-fit: cover; }
-/* the river-sunset floor keeps its hour, without the over-saturated sky */
-.cs-hour-item:nth-child(5) img { filter: saturate(.72) contrast(.97); }
 .cs-hour-item figcaption { display: flex; gap: 18px; padding-top: 14px; opacity: .6; }
 .cs-hour-item figcaption span:first-child { color: var(--bronze); opacity: 1; }
 
