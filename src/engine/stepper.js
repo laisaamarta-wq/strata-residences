@@ -22,7 +22,7 @@ const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-redu
 let ACTIVE = null // one held scene at a time
 const GLIDE = { on: false } // a release glide is running
 
-export function useStepper(ref, { count, lenis, hold = 1200 }) {
+export function useStepper(ref, { count, lenis, hold = 1200, wheel = 26, swipe = 34 }) {
   const [index, setIndex] = useState(0)
   const S = useRef({ i: 0, locked: false, until: 0, go: null })
 
@@ -102,7 +102,7 @@ export function useStepper(ref, { count, lenis, hold = 1200 }) {
       lastT = t; lastD = d
       if (!armed) return
       acc += d
-      if (Math.abs(acc) > 26) { const dir = acc > 0 ? 1 : -1; armed = false; acc = 0; step(dir) }
+      if (Math.abs(acc) > wheel) { const dir = acc > 0 ? 1 : -1; armed = false; acc = 0; step(dir) }
     }
     let y0 = null, fired = false
     const onTouchStart = (e) => { y0 = e.touches[0].clientY; fired = false }
@@ -112,7 +112,7 @@ export function useStepper(ref, { count, lenis, hold = 1200 }) {
       e.preventDefault()
       if (fired || y0 === null) return
       const dy = y0 - e.touches[0].clientY
-      if (Math.abs(dy) > 34) { fired = true; step(dy > 0 ? 1 : -1) }
+      if (Math.abs(dy) > swipe) { fired = true; step(dy > 0 ? 1 : -1) }
     }
     const onKey = (e) => {
       if (!s.locked || e.target.closest?.('input, textarea, select')) return
@@ -135,7 +135,7 @@ export function useStepper(ref, { count, lenis, hold = 1200 }) {
       window.removeEventListener('keydown', onKey)
       if (ACTIVE === s) { ACTIVE = null; lenis.start() }
     }
-  }, [ref, lenis, count, hold])
+  }, [ref, lenis, count, hold, wheel, swipe])
 
   const go = useCallback((i) => S.current.go?.(i), [])
   return [index, go]

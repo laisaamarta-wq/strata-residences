@@ -25,7 +25,7 @@ const PLACES = [
   { k: 'Skyline', im: '04-view', t: 'And the reason for all of it — the Old Town, across the water.', f: [50, 50] },
 ]
 const N = PLACES.length
-const DUR = 2.1 // one step, always
+const DUR = 1.7 // one step, always
 const PUSH = 1.2 // how far the camera moves into the place it leaves
 const src = (im) => (im === 'hero' ? img('hero', 2688) : img(im, 2400))
 const set = (im) => (im === 'hero' ? `${img('hero', 1400)} 1400w, ${img('hero', 2688)} 2688w` : srcset(im))
@@ -35,7 +35,7 @@ export default function Walk({ lenis }) {
   const root = useRef(null)
   const cam = useRef(null)
   const ims = useRef([])
-  const [at] = useStepper(root, { count: N, lenis, hold: 1900 })
+  const [at] = useStepper(root, { count: N, lenis, hold: 1550 })
   const prev = useRef(0)
 
   // the arrival: the city settles into view as the section comes up from below the day

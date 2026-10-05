@@ -38,7 +38,7 @@ export default function Day({ lenis }) {
   const root = useRef(null)
   const clock = useRef(null)
   const bar = useRef(null)
-  const [at, go] = useStepper(root, { count: N, lenis, hold: 1300 })
+  const [at, go] = useStepper(root, { count: N, lenis, hold: 1050, wheel: 18, swipe: 26 })
   const t = useRef({ m: STOPS[0].min })
   const prev = useRef(0)
 
@@ -50,7 +50,7 @@ export default function Day({ lenis }) {
     }
     // one hour at a time; arriving from below, the evening is simply there
     if (Math.abs(at - prev.current) > 1) { gsap.killTweensOf(t.current); t.current.m = STOPS[at].min }
-    else gsap.to(t.current, { m: STOPS[at].min, duration: 1.5, ease: STEP_EASE, overwrite: true, onUpdate: draw })
+    else gsap.to(t.current, { m: STOPS[at].min, duration: 1.2, ease: STEP_EASE, overwrite: true, onUpdate: draw })
     prev.current = at
     draw()
   }, [at])
