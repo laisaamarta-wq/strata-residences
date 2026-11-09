@@ -81,6 +81,7 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
         gsap.fromTo(tilt, { opacity: 0 }, { opacity: 1, duration: 1.6, ease: 'sine.out' })
         gsap.fromTo(tilt, { scale: 1.03 }, { scale: 1, duration: 5.5, ease: 'sine.out', transformOrigin: '60% 60%' })
         setTimeout(() => alive && setIntroText(true), 700)
+        d.lightUp(1.15)
       })
     }
     return () => { alive = false; window.removeEventListener('resize', onR) }
@@ -226,6 +227,8 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
   useEffect(() => {
     const D = dir.current
     if (!D || D.mode !== 'overview') return
+    if (shown < 0 && D.glow) return // the opening glow is still playing
+    D.stopGlow()
     sliceRefs.current.forEach((el, i) => {
       gsap.to(el, { opacity: i === shown ? 1 : 0, filter: i === shown ? 'brightness(1.12)' : 'brightness(1)', duration: 0.7, ease: 'power2.out', overwrite: 'auto' })
     })

@@ -141,13 +141,10 @@ em { font-style: italic; }
 .layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
 .facade, .interior, .interior img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; will-change: transform, opacity; }
 .interior { overflow: hidden; }
-.facade { --fe: 0%;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 var(--fe), #000 calc(100% - var(--fe)), transparent 100%), linear-gradient(90deg, transparent 0%, #000 var(--fe), #000 calc(100% - var(--fe)), transparent 100%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(180deg, transparent 0%, #000 var(--fe), #000 calc(100% - var(--fe)), transparent 100%), linear-gradient(90deg, transparent 0%, #000 var(--fe), #000 calc(100% - var(--fe)), transparent 100%);
-  mask-composite: intersect; }
-.flash { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen; opacity: 0;
-  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255, 243, 226, 1), rgba(255, 226, 190, 0.55) 45%, rgba(255, 220, 180, 0) 78%); }
+/* the facade close-up needs no edge mask: it fades in from 0 opacity, and an animated mask repainted the whole photo every frame */
+.flash { position: absolute; inset: 0; pointer-events: none; opacity: 0; will-change: opacity;
+  /* plain alpha instead of a screen blend: same warm bloom, without re-blending the whole frame */
+  background: radial-gradient(ellipse 60% 55% at 50% 50%, rgba(255, 243, 226, .62), rgba(255, 226, 190, 0.3) 45%, rgba(255, 220, 180, 0) 78%); }
 .scrim { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.2s var(--ease);
   background:
     linear-gradient(90deg, rgba(10, 9, 8, 0.62) 0%, rgba(10, 9, 8, 0.18) 38%, rgba(10, 9, 8, 0) 60%),

@@ -125,6 +125,27 @@ export class Director {
     }
   }
 
+  // ---------- opening: the building lights up, floor by floor, from the ground up ----------
+  // Like a tree being switched on: each level brightens in turn (G → PH), the whole
+  // building holds lit for a moment, then settles back to the resting photograph.
+  lightUp(delay = 0) {
+    const { slices, master } = this.els
+    if (reduce || !slices?.length) return
+    this.glow?.kill()
+    // the photograph waits in shadow, then the levels switch on from the ground up
+    gsap.set(master, { transition: 'none', filter: 'brightness(0.5) saturate(0.8)' })
+    gsap.set(slices, { opacity: 0, filter: 'brightness(1)' })
+    const tl = gsap.timeline({ delay, onComplete: () => { this.glow = null; gsap.set(master, { clearProps: 'transition,filter' }) } })
+    tl.to(slices, { opacity: 1, filter: 'brightness(1.3) saturate(1.08)', duration: 0.32, ease: 'power2.out', stagger: 0.14 }, 0)
+    const lit = 0.32 + 0.14 * (slices.length - 1)
+    // the whole building holds lit, then settles back to the resting photograph
+    tl.to(master, { filter: 'brightness(1) saturate(1)', duration: 1.0, ease: 'sine.inOut' }, lit + 0.55)
+    tl.to(slices, { opacity: 0, filter: 'brightness(1)', duration: 1.0, ease: 'sine.inOut' }, lit + 0.55)
+    this.glow = tl
+  }
+  // any interaction takes over from the opening glow
+  stopGlow() { if (this.glow) { this.glow.kill(); this.glow = null; gsap.set(this.els.master, { clearProps: 'transition,filter' }) } }
+
   // ---------- building → floor ----------
   buildEnter(i) {
     const { world, master, plate, slices, facades, interiors, flash } = this.els
@@ -163,16 +184,16 @@ export class Director {
     // Phase 2 — matched cut: slice → photographic close-up of the same floor
     const T2 = 1.2
     tl.fromTo(world, this.camProps(C1), { ...this.camProps(C2), duration: 1.0, ease: 'power2.in', immediateRender: false }, T2)
-    tl.fromTo(facades[i], { opacity: 0, scale: m, filter: 'blur(4px)', '--fe': '22%' },
-      { opacity: 1, scale: 1, filter: 'blur(0px)', '--fe': '0%', duration: 1.0, ease: 'power2.in' }, T2)
+    tl.fromTo(facades[i], { opacity: 0, scale: m, filter: 'blur(4px)' },
+      { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.0, ease: 'power2.in' }, T2)
 
     // Phase 3 — push through the glass into the interior
     const T3 = 2.12
     tl.fromTo(facades[i], { scale: 1 }, { scale: 1.55, duration: 1.0, ease: 'power2.in', immediateRender: false }, T3)
-    tl.to(facades[i], { filter: 'blur(10px)', opacity: 0, duration: 0.5, ease: 'power1.in' }, T3 + 0.45)
+    tl.to(facades[i], { filter: 'blur(6px)', opacity: 0, duration: 0.5, ease: 'power1.in' }, T3 + 0.45)
     tl.fromTo(flash, { opacity: 0 }, { opacity: 0.55, duration: 0.35, ease: 'power1.in' }, T3 + 0.45)
     tl.to(flash, { opacity: 0, duration: 0.7, ease: 'power2.out' }, T3 + 0.8)
-    tl.fromTo(interiors[i], { opacity: 0, scale: 1.32, filter: 'blur(14px)' },
+    tl.fromTo(interiors[i], { opacity: 0, scale: 1.32, filter: 'blur(8px)' },
       { opacity: 1, scale: 1.0, filter: 'blur(0px)', duration: 1.25, ease: 'power3.out' }, T3 + 0.55)
 
     tl.timeScale(reduce ? 3 : 1.12)
@@ -180,6 +201,7 @@ export class Director {
   }
 
   async enter(i) {
+    this.stopGlow()
     this.mode = 'moving'
     this.active = i
     this.zone = 0
@@ -216,6 +238,7 @@ export class Director {
 
   // ---------- floor → floor: the elevator ----------
   async elevator(from, to) {
+    this.stopGlow()
     this.mode = 'moving'
     const { facades, interiors, flash } = this.els
     const dir = to > from ? 1 : -1
@@ -232,7 +255,7 @@ export class Director {
     const n = path.length - 1
     const tl = gsap.timeline()
     // 1. step back out to the facade
-    tl.to(interiors[from], { opacity: 0, scale: 1.12, filter: 'blur(10px)', duration: 0.6, ease: 'power2.in' }, 0)
+    tl.to(interiors[from], { opacity: 0, scale: 1.12, filter: 'blur(6px)', duration: 0.6, ease: 'power2.in' }, 0)
     tl.fromTo(facades[from], { opacity: 0, scale: 1.4, filter: 'blur(8px)', yPercent: 0 },
       { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.75, ease: 'power3.out' }, 0.2)
     // 2. travel vertically along the facade, floor by floor
@@ -255,10 +278,10 @@ export class Director {
     const T = 0.95 + travel
     // 3. push into the new interior
     tl.to(facades[to], { scale: 1.55, duration: 1.0, ease: 'power2.in' }, T + 0.05)
-    tl.to(facades[to], { filter: 'blur(10px)', opacity: 0, duration: 0.5, ease: 'power1.in' }, T + 0.5)
+    tl.to(facades[to], { filter: 'blur(6px)', opacity: 0, duration: 0.5, ease: 'power1.in' }, T + 0.5)
     tl.fromTo(flash, { opacity: 0 }, { opacity: 0.45, duration: 0.35 }, T + 0.5)
     tl.to(flash, { opacity: 0, duration: 0.7, ease: 'power2.out' }, T + 0.85)
-    tl.fromTo(interiors[to], { opacity: 0, scale: 1.32, filter: 'blur(14px)' },
+    tl.fromTo(interiors[to], { opacity: 0, scale: 1.32, filter: 'blur(8px)' },
       { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.25, ease: 'power3.out' }, T + 0.6)
     tl.call(() => this.onState({ phase: 'floor-ui' }), null, T + 0.7)
     tl.timeScale(reduce ? 3 : 1.1)
