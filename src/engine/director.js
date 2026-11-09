@@ -91,10 +91,14 @@ export class Director {
 
   // ---------- asset loading ----------
   loadImg(el) {
-    if (!el || el.getAttribute('src')) return Promise.resolve()
-    const ds = el.dataset
-    if (ds.srcset) el.setAttribute('srcset', ds.srcset)
-    el.setAttribute('src', ds.src)
+    if (!el) return Promise.resolve()
+    if (!el.getAttribute('src')) {
+      const ds = el.dataset
+      if (ds.srcset) el.setAttribute('srcset', ds.srcset)
+      el.setAttribute('src', ds.src)
+    }
+    // decode every time (cheap when the picture is still decoded): a picture evicted from
+    // the decode cache since the last visit would otherwise stall the flight while it decodes
     return el.decode ? el.decode().catch(() => {}) : Promise.resolve()
   }
   preloadFloor(i) {
@@ -226,8 +230,10 @@ export class Director {
     tl.eventCallback('onComplete', null)
     tl.eventCallback('onReverseComplete', () => {
       this.active = -1
-      gsap.set(this.els.slices, { opacity: 0 })
+      // hand back to the photograph with a short crossfade, not a cut: the photograph sat
+      // under the opaque floors, so the browser had not drawn it, and a cut showed a blank frame
       gsap.set(this.els.master, { opacity: 1 })
+      gsap.to(this.els.slices, { opacity: 0, duration: 0.35, ease: 'sine.out', overwrite: 'auto' })
       gsap.set(this.els.world, { opacity: 1, ...this.camProps(this.cam()) })
       gsap.set(this.els.plate, { opacity: 0 })
       this.finish()
