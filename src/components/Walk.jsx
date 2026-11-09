@@ -3,6 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { img, srcset } from '../data.js'
 import { useStepper, STEP_EASE } from '../engine/stepper.js'
+import { decodeOne } from '../engine/warm.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -51,6 +52,7 @@ export default function Walk({ lenis }) {
   useLayoutEffect(() => {
     const from = prev.current, to = at
     prev.current = at
+    decodeOne(ims.current[to + 1]); decodeOne(ims.current[to - 1])
     if (from === to) return
     const A = ims.current[from], B = ims.current[to]
     const fwd = to > from
@@ -92,7 +94,7 @@ export default function Walk({ lenis }) {
       <div className="walk-sticky">
         <div className="walk-cam" ref={cam}>
           {PLACES.map((p, i) => (
-            <img key={p.im} ref={(el) => (ims.current[i] = el)} className="walk-img" alt={i === at ? p.k : ''}
+            <img decoding="async" key={p.im} ref={(el) => (ims.current[i] = el)} className="walk-img" alt={i === at ? p.k : ''}
               src={src(p.im)} srcSet={set(p.im)} sizes="100vw" loading="lazy" />
           ))}
         </div>

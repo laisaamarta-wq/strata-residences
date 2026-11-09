@@ -111,11 +111,11 @@ function Layers({ lenis }) {
         <div className="rb-stage">
           <div className={`rb-frame ${L.hl.length ? 'has-hl' : ''} ${L.hl.length > 1 ? 'is-all' : ''}`} ref={frame}>
             <div className="rb-world" ref={world} style={{ width: MASTER.w, height: MASTER.h }}>
-              <img className="rb-master" alt="STRATA on the Ķīpsala riverbank at dusk"
+              <img decoding="async" className="rb-master" alt="STRATA on the Ķīpsala riverbank at dusk"
                 src={img('hero', 2688)} srcSet={`${img('hero', 1400)} 1400w, ${img('hero', 2688)} 2688w`} sizes="(max-width: 900px) 260vw, 160vw" loading="lazy" />
               <div className="rb-veil" />
               {FLOORS.map((f, i) => (
-                <img key={f.id} className={`rb-slice ${L.hl.includes(i) ? 'on' : ''}`} alt="" src={`/img/slice-${f.id}.webp`} loading="lazy"
+                <img decoding="async" key={f.id} className={`rb-slice ${L.hl.includes(i) ? 'on' : ''}`} alt="" src={`/img/slice-${f.id}.webp`} loading="lazy"
                   style={{ left: f.slice.x, top: f.slice.y, width: f.slice.w, height: f.slice.h, '--d': `${i * 0.07}s` }} />
               ))}
               <svg className="rb-lines" viewBox={`0 0 ${MASTER.w} ${MASTER.h}`} aria-hidden="true">
@@ -129,7 +129,7 @@ function Layers({ lenis }) {
           </div>
           {LAYERS.map((l, i) => (
             <figure key={l.k} className={`rb-ev ${i === at ? 'on' : ''}`} aria-hidden={i !== at}>
-              <div className="rb-ev-img"><img alt={l.ev.c} src={img(l.ev.im, 1280)} srcSet={srcset(l.ev.im)} sizes="(max-width: 900px) 46vw, 20vw" loading="lazy" /></div>
+              <div className="rb-ev-img"><img decoding="async" alt={l.ev.c} src={img(l.ev.im, 1280)} srcSet={srcset(l.ev.im)} sizes="(max-width: 900px) 46vw, 20vw" loading="lazy" /></div>
               <figcaption className="mono">{l.ev.c}</figcaption>
             </figure>
           ))}

@@ -54,7 +54,7 @@ export default function Residences({ onExplore }) {
       </div>
       <div className={`res-thumb ${hov ? 'on' : ''}`} ref={thumb} aria-hidden="true">
         {FLOORS.map((f) => (
-          <img key={f.id} src={img(f.zones[0].img, 1280)} alt="" loading="lazy" className={hov?.id === f.id ? 'on' : ''} />
+          <img decoding="async" key={f.id} src={img(f.zones[0].img, 1280)} alt="" loading="lazy" className={hov?.id === f.id ? 'on' : ''} />
         ))}
       </div>
     </section>

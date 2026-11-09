@@ -23,7 +23,7 @@ export default function Footer() {
         </div>
         {/* the case behind the concept — the one link a visitor of the portfolio should not miss */}
         <a className="foot-btc" href="/behind-the-case">
-          <span className="foot-btc-img" aria-hidden="true"><img src={img('hero', 1400)} alt="" loading="lazy" /></span>
+          <span className="foot-btc-img" aria-hidden="true"><img decoding="async" src={img('hero', 1400)} alt="" loading="lazy" /></span>
           <span className="foot-btc-body">
             <span className="mono foot-btc-k">Behind the case</span>
             <span className="serif foot-btc-t">How STRATA was designed,{" "}<em>layer by layer.</em></span>

@@ -1,7 +1,8 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { FLOORS, MASTER, BUILDING_BOX as BB, img, srcset } from '../data.js'
 import { useStepper, STEP_EASE } from '../engine/stepper.js'
+import { decodeOne } from '../engine/warm.js'
 
 /*
  * A day at STRATA — follow the light.
@@ -55,14 +56,20 @@ export default function Day({ lenis }) {
     draw()
   }, [at])
 
+  // keep the neighbours of the current hour decoded, so the next step never waits for a picture
+  useEffect(() => {
+    const els = root.current?.querySelectorAll('.day-room img')
+    if (els) { decodeOne(els[at + 1]); decodeOne(els[at - 1]) }
+  }, [at])
+
   const S = STOPS[at]
   return (
     <section className="day" ref={root} aria-label="A day at STRATA">
       <div className="day-sticky">
         <div className="day-rooms">
           {STOPS.map((s, i) => (
-            <div key={s.im} className={`day-room ${i <= at ? 'on' : ''}`}>
-              <img alt={`${s.fl.name} — ${s.fl.light}`} src={img(s.im, 2400)} srcSet={srcset(s.im)} sizes="100vw" loading="lazy" />
+            <div key={s.im} className={`day-room ${i <= at ? 'on' : ''} ${i < at - 1 ? 'gone' : ''}`}>
+              <img decoding="async" alt={`${s.fl.name} — ${s.fl.light}`} src={img(s.im, 2400)} srcSet={srcset(s.im)} sizes="100vw" loading="lazy" />
             </div>
           ))}
         </div>
@@ -81,9 +88,9 @@ export default function Day({ lenis }) {
         <div className="day-bld" aria-hidden="true">
           <div className="day-bld-crop" style={{ aspectRatio: `${CROP.w} / ${CROP.h}` }}>
             <div className="day-bld-world" style={{ width: pc(MASTER.w, CROP.w), left: pc(-CROP.x, CROP.w), top: pc(-CROP.y, CROP.h), aspectRatio: `${MASTER.w} / ${MASTER.h}` }}>
-              <img className="day-bld-master" alt="" src={img('hero', 1400)} loading="lazy" />
+              <img decoding="async" className="day-bld-master" alt="" src={img('hero', 1400)} loading="lazy" />
               {FLOORS.map((f, i) => (
-                <img key={f.id} className={`day-bld-slice ${i === S.i ? 'on' : ''}`} alt="" src={`/img/slice-${f.id}.webp`} loading="lazy"
+                <img decoding="async" key={f.id} className={`day-bld-slice ${i === S.i ? 'on' : ''}`} alt="" src={`/img/slice-${f.id}.webp`} loading="lazy"
                   style={{ left: pc(f.slice.x, MASTER.w), top: pc(f.slice.y, MASTER.h), width: pc(f.slice.w, MASTER.w), height: pc(f.slice.h, MASTER.h) }} />
               ))}
             </div>

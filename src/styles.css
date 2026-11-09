@@ -173,7 +173,7 @@ em { font-style: italic; }
 .stage:not(.mode-overview) .mist { opacity: 0; }
 
 /* ---------- hero UI ---------- */
-.hero-ui { position: absolute; left: var(--gutter); top: 50%; transform: translateY(-48%); max-width: min(46vw, 760px); z-index: 2; pointer-events: none; }
+.hero-ui { position: absolute; left: var(--gutter); top: 50%; transform: translateY(-48%); max-width: min(46vw, 760px); z-index: 2; pointer-events: none; will-change: transform, opacity, filter; }
 .eyebrow { display: flex; gap: 16px; margin: 0 0 28px; white-space: nowrap; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.17em; text-transform: uppercase;
   color: var(--bone); text-shadow: 0 1px 14px rgba(8, 9, 16, .55); }
 .eyebrow span:first-child { color: var(--bronze-l); }
@@ -483,6 +483,9 @@ button.res-row:hover .r-go { opacity: 1; transform: none; }
 .day-rooms, .day-room { position: absolute; inset: 0; }
 .day-room { clip-path: inset(50% 0 50% 0); transition: clip-path 1.2s var(--ease); }
 .day-room.on { clip-path: inset(0 0 0 0); }
+/* rooms fully covered by the two on top are not painted at all (visibility flips after the reveal is done) */
+.day-room.gone { visibility: hidden; transition: clip-path 1.2s var(--ease), visibility 0s linear 1.3s; }
+.day-room img { will-change: transform; }
 .day-room img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.08); transition: transform 1.9s var(--ease-out); }
 .day-room.on img { transform: none; }
 .day-shade { position: absolute; inset: 0; pointer-events: none;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Lenis from 'lenis'
+import { warmImages } from './engine/warm.js'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Experience from './components/Experience.jsx'
@@ -49,20 +50,44 @@ export default function App() {
       ['#project', 'dark', 'project'], ['#residences', 'light', 'residences'], ['#architecture', 'light', 'architecture'],
       ['.day', 'dark', 'architecture'], ['.walk', 'dark', 'location'], ['#location', 'dark', 'location'], ['#enquire', 'light', 'location'],
     ]
-    const probe = () => {
-      for (const [sel, t, id] of sections) {
+    // section bounds are measured once per layout (load, resize, ScrollTrigger refresh), never
+    // per frame: reading the layout on every scroll forced a style/layout pass each frame
+    let bounds = []
+    const measure = () => {
+      const y = window.scrollY
+      bounds = sections.map(([sel, t, id]) => {
         const el = document.querySelector(sel)
-        if (!el) continue
+        if (!el) return null
         const r = el.getBoundingClientRect()
-        if (r.top <= 40 && r.bottom > 40) { setTheme(t); setActive(id); break }
+        return { top: r.top + y, bottom: r.bottom + y, t, id }
+      }).filter(Boolean)
+      const enq = document.querySelector('#enquire')
+      bounds.enq = enq ? enq.getBoundingClientRect().top + y : Infinity
+    }
+    const probe = () => {
+      const y = l.scroll
+      for (const b of bounds) {
+        if (b.top - y <= 40 && b.bottom - y > 40) { setTheme(b.t); setActive(b.id); break }
       }
       // the footer is shorter than the viewport, so Enquire becomes active once it is well in view
-      const enq = document.querySelector('#enquire')
-      if (enq && enq.getBoundingClientRect().top < window.innerHeight * 0.7) setActive('enquire')
+      if (bounds.enq - y < window.innerHeight * 0.7) setActive('enquire')
     }
+    const remeasure = () => { measure(); probe() }
     const offProbe = l.on('scroll', probe)
-    probe()
-    return () => { gsap.ticker.remove(raf); offProbe(); l.destroy() }
+    ScrollTrigger.addEventListener('refresh', remeasure)
+    window.addEventListener('resize', remeasure)
+    window.addEventListener('load', remeasure)
+    const ro = new ResizeObserver(remeasure)
+    ro.observe(document.body)
+    remeasure()
+    // decode the big pictures of every section shortly before it arrives
+    const unwarm = [...document.querySelectorAll('.page section, .day, .walk, footer')].map((el) => warmImages(el))
+    return () => {
+      gsap.ticker.remove(raf); offProbe(); l.destroy()
+      ScrollTrigger.removeEventListener('refresh', remeasure)
+      window.removeEventListener('resize', remeasure); window.removeEventListener('load', remeasure)
+      ro.disconnect(); unwarm.forEach((f) => f())
+    }
   }, [])
 
   const scrollTo = useCallback((target) => {
