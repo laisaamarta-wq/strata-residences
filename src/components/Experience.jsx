@@ -319,9 +319,11 @@ export default function Experience({ lenis, directorRef, onGoTo, onUiChange }) {
           Seven strata of stone, glass and light on the riverbank — each level tuned to a different hour of the day.
           Touch a floor to step inside.
         </p>
-        <div className="hero-meta r4 mono">
-          <span>56°57′11″ N</span><span>24°05′06″ E</span><span>Completion Q4 2028</span>
-        </div>
+        <dl className="hero-meta r4">
+          <div><dt className="mono">Latitude</dt><dd>56°57′11″ N</dd></div>
+          <div><dt className="mono">Longitude</dt><dd>24°05′06″ E</dd></div>
+          <div><dt className="mono">Completion</dt><dd>Q4 2028</dd></div>
+        </dl>
       </div>
 
       {label && (
